@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111820">
+    <title>Mercado Mexa | Tiendas Neto Cerca</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<!-- =========================
+     PANTALLA DE CARGA
+========================= -->
+
+<div class="splash" id="splash">
+
+    <div class="splash-shape splash-shape-a"></div>
+    <div class="splash-shape splash-shape-b"></div>
+
+    <div class="splash-content">
+
+        <div class="splash-cart">
+
+            <div class="cart-basket">
+                <span>M</span>
+            </div>
+
+            <div class="cart-handle"></div>
+
+            <div class="cart-wheel wheel-one"></div>
+            <div class="cart-wheel wheel-two"></div>
+
+        </div>
+
+        <div class="splash-brand">
+            <strong>MERCADO</strong>
+            <span>MEXA</span>
+        </div>
+
+        <p id="splashTexto">
+            Preparando tu mercado...
+        </p>
+
+        <div class="progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="progress-info">
+            <span id="progressPercent">0%</span>
+            <span id="progressEstado">CARGANDO</span>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- =========================
+     APLICACIÓN
+========================= -->
+
+<div class="app" id="app">
+
+
+    <!-- =========================
+         BARRA LATERAL
+    ========================= -->
+
+    <aside class="sidebar">
+
+        <div class="sidebar-logo">
+
+            <div class="logo-cuadro">
+                M
+            </div>
+
+            <div class="logo-text">
+                <strong>MERCADO</strong>
+                <span>MEXA</span>
+            </div>
+
+        </div>
+
+
+        <nav class="nav-principal">
+
+            <button class="nav-item activo" data-target="inicio">
+                <span>⌂</span>
+                <small>Inicio</small>
+            </button>
+
+            <button class="nav-item" data-target="mapa">
+                <span>⌖</span>
+                <small>Tiendas</small>
+            </button>
+
+            <button class="nav-item" data-target="catalogo">
+                <span>▣</span>
+                <small>Catálogo</small>
+            </button>
+
+            <button class="nav-item" id="navLista">
+                <span>🛒</span>
+                <small>Mi lista</small>
+                <b id="sidebarContador">0</b>
+            </button>
+
+            <button class="nav-item" data-target="favoritos">
+                <span>♡</span>
+                <small>Favoritos</small>
+            </button>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <div class="local-badge">
+                <span>🇲🇽</span>
+
+                <strong>
+                    APOYANDO<br>
+                    LO LOCAL
+                </strong>
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =========================
+         CONTENIDO PRINCIPAL
+    ========================= -->
+
+    <main class="main">
+
+
+        <!-- HEADER -->
+
+        <header class="topbar">
+
+            <button
+                class="mobile-menu"
+                id="mobileMenu">
+                ☰
+            </button>
+
+
+            <div class="mobile-brand">
+
+                <div class="logo-cuadro">
+                    M
+                </div>
+
+                <strong>
+                    MERCADO
+                    <span>MEXA</span>
+                </strong>
+
+            </div>
+
+
+            <div class="buscador">
+
+                <span>⌕</span>
+
+                <input
+                    type="text"
+                    placeholder="Buscar: pan, leche, refrescos..."
+                    id="buscador">
+
+            </div>
+
+
+            <div class="ubicacion-top">
+
+                <span class="pin-live">
+                    ●
+                </span>
+
+                <div>
+
+                    <small>
+                        UBICACIÓN ACTIVA
+                    </small>
+
+                    <strong id="estadoUbicacion">
+                        Esperando GPS...
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <button
+                class="btn-negro btn-ubicacion"
+                id="botonUbicacion">
+
+                ⌖ MI UBICACIÓN
+
+            </button>
+
+
+            <button
+                class="btn-naranja btn-lista"
+                id="botonLista">
+
+                🛒 MI LISTA
+                <span>
+                    (<b id="contadorLista">0</b>)
+                </span>
+
+            </button>
+
+
+            <button
+                class="avatar"
+                id="botonCuenta"
+                title="Cuenta">
+
+                ●
+
+            </button>
+
+        </header>
+
+
+        <section class="contenido">
+
+
+            <!-- =========================
+                 HERO
+            ========================= -->
+
+            <section
+                class="hero"
+                id="inicio">
+
+                <div class="hero-copy">
+
+                    <div class="linea-naranja"></div>
+
+                    <div>
+
+                        <span class="eyebrow">
+                            MERCADO MEXA · LOCALIZADOR INTELIGENTE
+                        </span>
+
+                        <h1>
+                            TU MERCADO
+                            <br>
+                            <em>MÁS CERCA</em>
+                        </h1>
+
+                        <p>
+                            Encuentra tiendas Neto cercanas,
+                            calcula rutas reales y arma tu lista
+                            del súper desde un solo lugar.
+                        </p>
+
+
+                        <div class="hero-actions">
+
+                            <button
+                                class="btn-naranja grande"
+                                id="heroUbicacion">
+
+                                ⌖ ENCONTRAR MI TIENDA
+
+                            </button>
+
+
+                            <button
+                                class="btn-outline grande"
+                                id="heroVerMapa">
+
+                                VER MAPA →
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="hero-visual">
+
+                    <div class="hero-card">
+
+                        <div class="hero-cart">
+                            🛒
+                        </div>
+
+                        <div class="hero-tag">
+
+                            TU SÚPER,
+                            <br>
+
+                            <strong>
+                                MÁS FÁCIL.
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="hero-dot dot-one"></div>
+                    <div class="hero-dot dot-two"></div>
+
+                    <div class="hero-line"></div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================
+                 INDICADORES
+            ========================= -->
+
+            <section class="quick-stats">
+
+                <div class="stat">
+
+                    <span>⌖</span>
+
+                    <div>
+                        <strong>GPS REAL</strong>
+                        <small>
+                            Tu ubicación actual
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="stat">
+
+                    <span>🏪</span>
+
+                    <div>
+                        <strong>TIENDAS REALES</strong>
+                        <small>
+                            Datos de OpenStreetMap
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="stat">
+
+                    <span>↗</span>
+
+                    <div>
+                        <strong>RUTAS REALES</strong>
+                        <small>
+                            Por calles
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="stat">
+
+                    <span>🛒</span>
+
+                    <div>
+                        <strong>MI LISTA</strong>
+                        <small>
+                            Guardada en tu navegador
+                        </small>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================
+                 MAPA + TIENDAS
+            ========================= -->
+
+            <section
+                class="map-section"
+                id="mapaSeccion">
+
+
+                <!-- MAPA -->
+
+                <div class="map-card">
+
+                    <div class="map-header">
+
+                        <div class="map-tags">
+
+                            <span class="tag-negro">
+                                ⌖ MAPA EN VIVO
+                            </span>
+
+                            <span
+                                class="tag-naranja"
+                                id="distanciaCercana">
+
+                                BUSCANDO...
+
+                            </span>
+
+                        </div>
+
+
+                        <button
+                            class="map-center"
+                            id="centrarMapa">
+
+                            ◎
+
+                        </button>
+
+                    </div>
+
+
+                    <div id="mapa"></div>
+
+
+                    <div class="map-legend">
+
+                        <span>
+                            <i class="legend-user"></i>
+                            Tu ubicación
+                        </span>
+
+                        <span>
+                            <i class="legend-store"></i>
+                            Tienda Neto
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- LISTA DE TIENDAS -->
+
+                <aside class="stores-panel">
+
+                    <div class="stores-head">
+
+                        <div>
+
+                            <span class="section-label">
+                                CERCA DE TI
+                            </span>
+
+                            <h2>
+                                TIENDAS NETO
+                                <em>CERCA</em>
+                            </h2>
+
+                        </div>
+
+
+                        <div class="sort">
+
+                            <small>
+                                ORDENADAS POR
+                            </small>
+
+                            <strong>
+                                DISTANCIA ↓
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="stores-status"
+                        id="storesStatus">
+
+                        <div class="mini-loader"></div>
+
+                        <span>
+                            Buscando tiendas...
+                        </span>
+
+                    </div>
+
+
+                    <div
+                        class="lista-tiendas"
+                        id="listaTiendas">
+                    </div>
+
+
+                    <button
+                        class="btn-ver-mas"
+                        id="mostrarMas">
+
+                        ↓ VER MÁS TIENDAS
+
+                    </button>
+
+                </aside>
+
+            </section>
+
+
+            <!-- =========================
+                 INFORMACIÓN
+            ========================= -->
+
+            <section class="info-strip">
+
+                <div class="info-title">
+
+                    <span>
+                        ¿QUÉ NECESITAS
+                        <br>
+                        HOY?
+                    </span>
+
+                    <strong>
+                        Compra fácil,
+                        <br>
+                        rápido y cerca.
+                    </strong>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <b>01</b>
+
+                    <span>⌕</span>
+
+                    <p>
+                        Busca tu tienda
+                        <br>
+                        más cercana
+                    </p>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <b>02</b>
+
+                    <span>⌖</span>
+
+                    <p>
+                        Consulta rutas
+                        <br>
+                        y tiempos
+                    </p>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <b>03</b>
+
+                    <span>🛒</span>
+
+                    <p>
+                        Explora productos
+                        <br>
+                        del catálogo
+                    </p>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <b>04</b>
+
+                    <span>✓</span>
+
+                    <p>
+                        Agrega productos
+                        <br>
+                        a tu lista
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================
+                 FOOTER
+            ========================= -->
+
+            <footer>
+
+                <div class="footer-logo">
+
+                    <div class="logo-cuadro">
+                        M
+                    </div>
+
+                    <strong>
+                        MERCADO
+                        <span>MEXA</span>
+                    </strong>
+
+                </div>
+
+                <p>
+                    ENCUENTRA · COMPRA · AHORRA
+                </p>
+
+                <strong>
+                    ¡TU SÚPER, MÁS FÁCIL!
+                </strong>
+
+            </footer>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- =========================
+     MODAL MI LISTA
+========================= -->
+
+<div
+    class="ventana-modal"
+    id="modalLista">
+
+    <div class="contenido-modal lista-modal">
+
+        <button
+            class="cerrar-modal"
+            id="cerrarLista">
+
+            ×
+
+        </button>
+
+
+        <span class="section-label">
+            TU COMPRA
+        </span>
+
+
+        <h2>
+            🛒 MI LISTA DEL SÚPER
+        </h2>
+
+
+        <div id="contenidoLista"></div>
+
+
+        <div class="acciones-lista">
+
+            <button
+                class="btn-naranja"
+                onclick="generarListaAutomatica()">
+
+                ✨ GENERAR LISTA
+
+            </button>
+
+
+            <button
+                class="btn-outline"
+                onclick="vaciarLista()">
+
+                VACIAR LISTA
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     MODAL CUENTA
+========================= -->
+
+<div
+    class="ventana-modal"
+    id="modalCuenta">
+
+    <div class="contenido-modal cuenta-modal">
+
+        <button
+            class="cerrar-modal"
+            id="cerrarCuenta">
+
+            ×
+
+        </button>
+
+
+        <div class="cuenta-icon">
+            ●
+        </div>
+
+
+        <span class="section-label">
+            MERCADO MEXA
+        </span>
+
+
+        <h2>
+            INICIAR SESIÓN
+        </h2>
+
+
+        <p>
+            Accede para guardar tus preferencias
+            y disfrutar una experiencia más personalizada.
+        </p>
+
+
+        <button class="btn-naranja grande">
+            INICIAR SESIÓN
+        </button>
+
+
+        <button class="btn-outline grande">
+            CREAR CUENTA
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- LEAFLET -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="script.js"></script>
+
+</body>
+</html>
