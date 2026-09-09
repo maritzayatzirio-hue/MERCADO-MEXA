@@ -9,6 +9,10 @@ let tiendasVisibles = 6;
 
 let carrito = JSON.parse(localStorage.getItem("carritoMexa") || "[]");
 carrito = carrito.map(p => ({ ...p, cantidad: p.cantidad || 1 }));
+let favoritosMexa =
+    JSON.parse(
+        localStorage.getItem("favoritosMexa") || "[]"
+    );
 
 const estadoUbicacion = document.getElementById("estadoUbicacion");
 const listaTiendas = document.getElementById("listaTiendas");
@@ -1884,8 +1888,6 @@ async function obtenerNombreLugar(
     }
 
 }
-
-
 /* =========================
    CATÁLOGO
 ========================= */
@@ -1899,25 +1901,22 @@ function entrarTienda(id) {
                 String(id)
         );
 
-
     if (!tienda)
         return;
 
-
     abrirCatalogo(tienda);
-
 }
 
+/* =========================
+   ABRIR CATÁLOGO
+========================= */
 
-function abrirCatalogo(
-    tienda
-) {
+function abrirCatalogo(tienda) {
 
     let catalogo =
         document.getElementById(
             "catalogoTienda"
         );
-
 
     if (!catalogo) {
 
@@ -1939,104 +1938,39 @@ function abrirCatalogo(
     }
 
 
-    const categorias =
-        getCategoriasBase();
+    /* Cancelar animación anterior */
 
+    if (catalogo._timer) {
+        clearTimeout(
+            catalogo._timer
+        );
+    }
+
+
+    /* =========================
+       ANIMACIÓN DE ENTRADA
+    ========================= */
 
     catalogo.innerHTML = `
 
-        <div
-            class="contenido-modal"
-            style="width:min(1000px,95vw)"
-        >
+        <div class="catalogo-loading">
 
-            <button
-                class="cerrar-modal"
-                onclick="cerrarCatalogo()"
-            >
-                ×
-            </button>
+            <div class="catalogo-loading-icon">
+                🛒
+            </div>
 
+            <div class="catalogo-loading-titulo">
+                ABRIENDO CATÁLOGO
+            </div>
 
-            <span class="section-label">
-                CATÁLOGO
-            </span>
+            <div class="catalogo-loading-bar">
 
-
-            <h2>
-                ${escapeHTML(
-                    tienda.nombre
-                )}
-            </h2>
-
-
-            <p
-                style="
-                    font-size:10px;
-                    color:#666
-                "
-            >
-
-                📍
-                ${escapeHTML(
-                    tienda.direccion
-                )}
-
-                ·
-
-                ${tienda.distancia.toFixed(2)}
-                km
-
-            </p>
-
-
-            <div class="categorias-catalogo">
-
-                ${categorias.map(
-                    (c, i) => `
-
-                    <button
-                        class="btn-outline categoria-btn"
-                        style="
-                            margin:5px 4px 0 0
-                        "
-                        onclick="
-                            mostrarCategoria(
-                                ${i},
-                                this
-                            )
-                        "
-                    >
-
-                        ${c.icono}
-                        ${c.nombre}
-
-                    </button>
-
-                `
-                ).join("")}
+                <div></div>
 
             </div>
 
-
-            <div
-                id="catalogoProductos"
-                style="
-                    display:grid;
-                    grid-template-columns:
-                        repeat(
-                            auto-fit,
-                            minmax(180px,1fr)
-                        );
-                    gap:12px;
-                    margin-top:20px;
-                "
-            >
-
-                ${crearProductosHTML(
-                    categorias[0]
-                )}
-
+            <div class="catalogo-loading-texto">
+                Preparando productos...
             </div>
 
         </div>
@@ -2048,8 +1982,160 @@ function abrirCatalogo(
         "activa"
     );
 
+
+    /* =========================
+       DESPUÉS DE LA ANIMACIÓN
+    ========================= */
+
+    catalogo._timer =
+        setTimeout(() => {
+
+            mostrarContenidoCatalogo(
+                catalogo,
+                tienda
+            );
+
+        }, 1300);
+
 }
 
+
+/* =========================
+   CONTENIDO DEL CATÁLOGO
+========================= */
+
+function mostrarContenidoCatalogo(
+    catalogo,
+    tienda
+) {
+
+    const categorias =
+        getCategoriasBase();
+
+
+    catalogo.innerHTML = `
+
+        <div
+            class="contenido-modal catalogo-modal"
+        >
+
+            <button
+                class="cerrar-modal"
+                onclick="cerrarCatalogo()"
+            >
+                ×
+            </button>
+
+
+            <!-- ENCABEZADO -->
+
+            <div class="catalogo-encabezado">
+
+                <div class="catalogo-logo">
+                    Neto
+                </div>
+
+                <div>
+
+                    <span class="section-label">
+                        CATÁLOGO
+                    </span>
+
+                    <h2>
+                        ${escapeHTML(
+                            tienda.nombre
+                        )}
+                    </h2>
+
+                    <p class="catalogo-direccion">
+
+                        📍
+                        ${escapeHTML(
+                            tienda.direccion
+                        )}
+
+                        ·
+
+                        ${Number(
+                            tienda.distancia
+                        ).toFixed(2)}
+                        km
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- CATEGORÍAS -->
+
+            <div class="categorias-catalogo">
+
+                ${categorias.map(
+                    (categoria, index) => `
+
+                    <button
+                        type="button"
+                        class="categoria-btn"
+                        onclick="
+                            mostrarCategoria(
+                                ${index},
+                                this
+                            )
+                        "
+                    >
+
+                        <span>
+                            ${categoria.icono}
+                        </span>
+
+                        ${categoria.nombre}
+
+                    </button>
+
+                `
+                ).join("")}
+
+            </div>
+
+
+            <!-- PRODUCTOS -->
+
+            <div
+                id="catalogoProductos"
+                class="catalogo-productos-vacio"
+            >
+
+                <div class="catalogo-seleccion">
+
+                    <div class="catalogo-seleccion-icono">
+                        🛍️
+                    </div>
+
+                    <strong>
+                        SELECCIONA UNA CATEGORÍA
+                    </strong>
+
+                    <span>
+                        Elige una categoría para ver
+                        los productos disponibles.
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =========================
+   MOSTRAR CATEGORÍA
+========================= */
 
 function mostrarCategoria(
     index,
@@ -2059,10 +2145,15 @@ function mostrarCategoria(
     const categorias =
         getCategoriasBase();
 
-
     const categoria =
         categorias[index];
 
+
+    if (!categoria)
+        return;
+
+
+    /* Quitar selección */
 
     document
         .querySelectorAll(
@@ -2070,179 +2161,599 @@ function mostrarCategoria(
         )
         .forEach(b => {
 
-            b.style.background =
-                "white";
-
-            b.style.color =
-                "#111820";
+            b.classList.remove(
+                "categoria-activa"
+            );
 
         });
 
 
-    btn.style.background =
-        "#ff4b12";
+    /* Activar categoría */
 
-    btn.style.color =
-        "white";
+    btn.classList.add(
+        "categoria-activa"
+    );
 
 
-    document
-        .getElementById(
+    const contenedor =
+        document.getElementById(
             "catalogoProductos"
-        )
-        .innerHTML =
-            crearProductosHTML(
-                categoria
-            );
-
-}
+        );
 
 
-function crearProductosHTML(
-    categoria
-) {
-
-    return categoria.productos
-        .map(
-            p => `
-
-            <div
-                style="
-                    padding:14px;
-                    border:
-                        1px solid #ded9d0;
-                    border-radius:12px;
-                    background:white;
-                "
-            >
-
-                <div
-                    style="
-                        height:75px;
-                        display:grid;
-                        place-items:center;
-                        border-radius:9px;
-                        background:#f0ede7;
-                        font-size:38px;
-                    "
-                >
-
-                    ${categoria.icono}
-
-                </div>
+    if (!contenedor)
+        return;
 
 
-                <strong
-                    style="
-                        display:block;
-                        margin-top:10px;
-                        font-size:11px
-                    "
-                >
-
-                    ${escapeHTML(
-                        p.nombre
-                    )}
-
-                </strong>
+    contenedor.className =
+        "catalogo-productos";
 
 
-                <small
-                    style="
-                        display:block;
-                        margin-top:4px;
-                        color:#666;
-                        font-size:8px
-                    "
-                >
-
-                    ${escapeHTML(
-                        p.desc
-                    )}
-
-                </small>
-
-
-                <div
-                    style="
-                        margin-top:8px;
-                        color:#ff4b12;
-                        font-size:8px;
-                        font-weight:800;
-                    "
-                >
-
-                    📅 CAD
-                    ${p.caducidad}
-                    ·
-                    ${p.lote}
-
-                </div>
-
-
-                <div
-                    style="
-                        margin-top:9px;
-                        font-size:19px;
-                        font-weight:900
-                    "
-                >
-
-                    $${p.precio.toFixed(2)}
-
-                </div>
-
-
-                <button
-                    class="btn-naranja"
-                    style="
-                        width:100%;
-                        margin-top:9px
-                    "
-                    onclick="
-                        agregarAlCarrito(
-                            '${escapeJS(p.nombre)}',
-                            ${p.precio}
-                        )
-                    "
-                >
-
-                    🛒 AGREGAR
-
-                </button>
-
-            </div>
-
-        `
-        )
-        .join("");
-
-}
-
-
-function cerrarCatalogo() {
-
-    document
-        .getElementById(
-            "catalogoTienda"
-        )
-        ?.classList.remove(
-            "activa"
+    contenedor.innerHTML =
+        crearProductosHTML(
+            categoria
         );
 
 }
 
 
 /* =========================
+   CREAR PRODUCTOS
+========================= */
+
+function crearProductosHTML(
+    categoria
+) {
+
+    if (
+        !categoria ||
+        !categoria.productos ||
+        !categoria.productos.length
+    ) {
+
+        return `
+
+            <div class="empty-stores">
+
+                <strong>
+                    NO HAY PRODUCTOS
+                </strong>
+
+                <p>
+                    No hay productos disponibles.
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+
+    return categoria.productos
+        .map(
+            (producto, index) => {
+
+                const favoritos =
+                    obtenerFavoritos();
+
+                const favorito =
+                    favoritos.includes(
+                        producto.nombre
+                    );
+
+
+                return `
+
+                    <div
+                        class="producto-catalogo"
+                        style="
+                            animation-delay:
+                            ${index * 65}ms
+                        "
+                    >
+
+                        <!-- IMAGEN / STICKER -->
+
+                        <div
+                            class="producto-imagen"
+                        >
+
+                            <div
+                                class="
+                                    producto-sticker
+                                "
+                            >
+                                ${producto.icono}
+                            </div>
+
+
+                            <!-- CORAZÓN -->
+
+                            <button
+                                type="button"
+                                class="
+                                    producto-favorito
+                                    ${favorito
+                                        ? "favorito-activo"
+                                        : ""
+                                    }
+                                "
+                                onclick="
+                                    toggleFavorito(
+                                        '${escapeJS(
+                                            producto.nombre
+                                        )}',
+                                        this
+                                    )
+                                "
+                                title="Agregar a favoritos"
+                            >
+
+                                ${favorito
+                                    ? "♥"
+                                    : "♡"
+                                }
+
+                            </button>
+
+                        </div>
+
+
+                        <!-- INFORMACIÓN -->
+
+                        <div
+                            class="producto-info"
+                        >
+
+                            <strong
+                                class="
+                                    producto-nombre
+                                "
+                            >
+
+                                ${escapeHTML(
+                                    producto.nombre
+                                )}
+
+                            </strong>
+
+
+                            <span
+                                class="
+                                    producto-presentacion
+                                "
+                            >
+
+                                ${escapeHTML(
+                                    producto.presentacion
+                                    || producto.desc
+                                    || ""
+                                )}
+
+                            </span>
+
+
+                            <!-- PRECIO -->
+
+                            <div
+                                class="producto-precio"
+                            >
+
+                                $${Number(
+                                    producto.precio
+                                ).toFixed(2)}
+
+                            </div>
+
+
+                            <!-- ESTRELLAS -->
+
+                            <div
+                                class="
+                                    producto-calificacion
+                                "
+                            >
+
+                                <span>
+                                    ★★★★★
+                                </span>
+
+                                <small>
+                                    (${producto.resenas || 120})
+                                </small>
+
+                            </div>
+
+
+                            <!-- CADUCIDAD -->
+
+                            <div
+                                class="
+                                    producto-caducidad
+                                "
+                            >
+
+                                📅 CAD
+
+                                <strong>
+                                    ${escapeHTML(
+                                        producto.caducidad
+                                    )}
+                                </strong>
+
+                            </div>
+
+
+                            <!-- LOTE -->
+
+                            <div
+                                class="producto-lote"
+                            >
+
+                                LOTE:
+
+                                ${escapeHTML(
+                                    producto.lote
+                                )}
+
+                            </div>
+
+
+                            <!-- AGREGAR -->
+
+                            <button
+                                type="button"
+                                class="
+                                    btn-naranja
+                                    producto-agregar
+                                "
+                                onclick="
+                                    agregarProductoCatalogo(
+                                        '${escapeJS(
+                                            producto.nombre
+                                        )}',
+                                        ${Number(
+                                            producto.precio
+                                        )}
+                                    )
+                                "
+                            >
+
+                                🛒 AGREGAR
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }
+        )
+        .join("");
+
+}
+
+
+/* =========================
+   AGREGAR PRODUCTO
+========================= */
+
+function agregarProductoCatalogo(
+    nombre,
+    precio
+) {
+
+    agregarAlCarrito(
+        nombre,
+        precio
+    );
+
+
+    mostrarMensajeCatalogo(
+        `✓ ${nombre} fue agregado correctamente`
+    );
+
+}
+
+
+/* =========================
+   FAVORITOS
+========================= */
+
+function obtenerFavoritos() {
+
+    return JSON.parse(
+        localStorage.getItem(
+            "favoritosMexa"
+        ) || "[]"
+    );
+
+}
+
+
+function toggleFavorito(
+    nombre,
+    boton
+) {
+
+    let favoritos =
+        obtenerFavoritos();
+
+
+    const existe =
+        favoritos.includes(
+            nombre
+        );
+
+
+    if (existe) {
+
+        favoritos =
+            favoritos.filter(
+                favorito =>
+                    favorito !==
+                    nombre
+            );
+
+        boton.classList.remove(
+            "favorito-activo"
+        );
+
+        boton.textContent =
+            "♡";
+
+
+        mostrarMensajeFavorito(
+            `♡ ${nombre} fue eliminado de favoritos`
+        );
+
+
+    } else {
+
+        favoritos.push(
+            nombre
+        );
+
+
+        boton.classList.add(
+            "favorito-activo"
+        );
+
+        boton.textContent =
+            "♥";
+
+
+        mostrarMensajeFavorito(
+            `♥ ${nombre} fue agregado a favoritos`
+        );
+
+    }
+
+
+    localStorage.setItem(
+        "favoritosMexa",
+        JSON.stringify(
+            favoritos
+        )
+    );
+
+}
+
+
+/* =========================
+   MENSAJE PRODUCTO
+========================= */
+
+function mostrarMensajeCatalogo(
+    mensaje
+) {
+
+    mostrarNotificacionCatalogo(
+        "✓",
+        "¡PRODUCTO AGREGADO CORRECTAMENTE!",
+        mensaje
+    );
+
+}
+
+
+/* =========================
+   MENSAJE FAVORITO
+========================= */
+
+function mostrarMensajeFavorito(
+    mensaje
+) {
+
+    mostrarNotificacionCatalogo(
+        "♥",
+        "¡AGREGADO A FAVORITOS!",
+        mensaje
+    );
+
+}
+
+
+/* =========================
+   NOTIFICACIÓN
+========================= */
+
+function mostrarNotificacionCatalogo(
+    icono,
+    titulo,
+    texto
+) {
+
+    const anterior =
+        document.querySelector(
+            ".mensaje-producto-agregado"
+        );
+
+
+    if (anterior) {
+
+        anterior.remove();
+
+    }
+
+
+    const mensajeDiv =
+        document.createElement(
+            "div"
+        );
+
+
+    mensajeDiv.className =
+        "mensaje-producto-agregado";
+
+
+    mensajeDiv.innerHTML = `
+
+        <div
+            class="
+                mensaje-producto-icono
+            "
+        >
+            ${icono}
+        </div>
+
+        <div>
+
+            <strong>
+                ${titulo}
+            </strong>
+
+            <span>
+                ${escapeHTML(
+                    texto
+                )}
+            </span>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(
+        mensajeDiv
+    );
+
+
+    setTimeout(() => {
+
+        mensajeDiv.classList.add(
+            "mostrar"
+        );
+
+    }, 20);
+
+
+    setTimeout(() => {
+
+        mensajeDiv.classList.remove(
+            "mostrar"
+        );
+
+
+        setTimeout(() => {
+
+            mensajeDiv.remove();
+
+        }, 300);
+
+    }, 2500);
+
+}
+
+
+/* =========================
+   CERRAR CATÁLOGO
+========================= */
+
+function cerrarCatalogo() {
+
+    const catalogo =
+        document.getElementById(
+            "catalogoTienda"
+        );
+
+
+    if (!catalogo)
+        return;
+
+
+    if (catalogo._timer) {
+
+        clearTimeout(
+            catalogo._timer
+        );
+
+    }
+
+
+    catalogo.classList.remove(
+        "activa"
+    );
+
+}
+
+
+/* =========================
+   CREAR PRODUCTO
+========================= */
+
+function productoCatalogo(
+    nombre,
+    precio,
+    presentacion,
+    caducidad,
+    lote,
+    icono,
+    resenas
+) {
+
+    return {
+
+        nombre,
+
+        precio,
+
+        presentacion,
+
+        desc:
+            presentacion,
+
+        caducidad,
+
+        lote,
+
+        icono,
+
+        resenas:
+            resenas || 120
+
+    };
+
+}
+
+
+/* =========================
    CATEGORÍAS
+   13 PRODUCTOS CADA UNA
 ========================= */
 
 function getCategoriasBase() {
 
     return [
 
-        {
+        /* =========================
+           ABARROTES - 13
+        ========================= */
 
+        {
             nombre:
                 "ABARROTES",
 
@@ -2251,66 +2762,145 @@ function getCategoriasBase() {
 
             productos: [
 
-                {
-                    nombre:
-                        "Frijol Negro 900g",
+                productoCatalogo(
+                    "Frijol Negro 900g",
+                    32,
+                    "Bolsa 900 g",
+                    "12/12/2026",
+                    "L-8841",
+                    "🫘",
+                    245
+                ),
 
-                    precio:
-                        32,
+                productoCatalogo(
+                    "Arroz Morelos 1kg",
+                    35,
+                    "Bolsa 1 kg",
+                    "08/03/2027",
+                    "L-9021",
+                    "🍚",
+                    198
+                ),
 
-                    desc:
-                        "Cosecha Mixteca, alto en proteína",
+                productoCatalogo(
+                    "Aceite Vegetal 1L",
+                    48,
+                    "Botella 1 L",
+                    "15/01/2027",
+                    "L-1120",
+                    "🫗",
+                    176
+                ),
 
-                    caducidad:
-                        "12/12/2026",
+                productoCatalogo(
+                    "Azúcar Estándar 1kg",
+                    29,
+                    "Bolsa 1 kg",
+                    "20/08/2027",
+                    "A-2231",
+                    "🍬",
+                    143
+                ),
 
-                    lote:
-                        "L-8841"
-                },
+                productoCatalogo(
+                    "Sal de Mesa 1kg",
+                    18,
+                    "Bolsa 1 kg",
+                    "14/05/2028",
+                    "S-3412",
+                    "🧂",
+                    112
+                ),
 
+                productoCatalogo(
+                    "Atún en Agua 140g",
+                    22,
+                    "Lata 140 g",
+                    "10/11/2028",
+                    "AT-5541",
+                    "🐟",
+                    221
+                ),
 
-                {
-                    nombre:
-                        "Arroz Morelos 1kg",
+                productoCatalogo(
+                    "Sopa Instantánea Pollo 85g",
+                    12,
+                    "Vaso 85 g",
+                    "18/09/2027",
+                    "SP-1182",
+                    "🍜",
+                    245
+                ),
 
-                    precio:
-                        35,
+                productoCatalogo(
+                    "Pasta Spaghetti 200g",
+                    17,
+                    "Paquete 200 g",
+                    "22/06/2028",
+                    "PS-2201",
+                    "🍝",
+                    189
+                ),
 
-                    desc:
-                        "Grano largo 100% mexicano",
+                productoCatalogo(
+                    "Avena 400g",
+                    28,
+                    "Bolsa 400 g",
+                    "14/02/2028",
+                    "AV-402",
+                    "🌾",
+                    134
+                ),
 
-                    caducidad:
-                        "08/03/2027",
+                productoCatalogo(
+                    "Mayonesa 390g",
+                    39,
+                    "Frasco 390 g",
+                    "05/07/2027",
+                    "MY-390",
+                    "🥚",
+                    167
+                ),
 
-                    lote:
-                        "L-9021"
-                },
+                productoCatalogo(
+                    "Salsa Cátsup 397g",
+                    31,
+                    "Botella 397 g",
+                    "12/08/2027",
+                    "SC-397",
+                    "🍅",
+                    154
+                ),
 
+                productoCatalogo(
+                    "Puré de Tomate 210g",
+                    14,
+                    "Lata 210 g",
+                    "18/10/2028",
+                    "PT-210",
+                    "🍅",
+                    98
+                ),
 
-                {
-                    nombre:
-                        "Aceite Vegetal 1L",
-
-                    precio:
-                        48,
-
-                    desc:
-                        "Aceite mixto",
-
-                    caducidad:
-                        "15/01/2027",
-
-                    lote:
-                        "L-1120"
-                }
+                productoCatalogo(
+                    "Café Soluble 100g",
+                    58,
+                    "Frasco 100 g",
+                    "22/04/2028",
+                    "CF-100",
+                    "☕",
+                    203
+                )
 
             ]
-
         },
 
 
-        {
+        /* =========================
+           LÁCTEOS - 13
+        ========================= */
 
+        {
             nombre:
                 "LÁCTEOS",
 
@@ -2319,66 +2909,145 @@ function getCategoriasBase() {
 
             productos: [
 
-                {
-                    nombre:
-                        "Leche Entera Neto 1L",
+                productoCatalogo(
+                    "Leche Entera Neto 1L",
+                    26,
+                    "Envase 1 L",
+                    "20/11/2026",
+                    "L-5512",
+                    "🥛",
+                    201
+                ),
 
-                    precio:
-                        26,
+                productoCatalogo(
+                    "Leche Deslactosada 1L",
+                    29,
+                    "Envase 1 L",
+                    "25/11/2026",
+                    "LD-4310",
+                    "🥛",
+                    187
+                ),
 
-                    desc:
-                        "Leche ultrapasteurizada",
+                productoCatalogo(
+                    "Leche Light 1L",
+                    28,
+                    "Envase 1 L",
+                    "22/11/2026",
+                    "LL-2201",
+                    "🥛",
+                    143
+                ),
 
-                    caducidad:
-                        "20/11/2026",
+                productoCatalogo(
+                    "Queso Oaxaca 400g",
+                    68,
+                    "Paquete 400 g",
+                    "05/12/2026",
+                    "L-5518",
+                    "🧀",
+                    178
+                ),
 
-                    lote:
-                        "L-5512"
-                },
+                productoCatalogo(
+                    "Queso Panela 400g",
+                    62,
+                    "Paquete 400 g",
+                    "08/12/2026",
+                    "QP-4418",
+                    "🧀",
+                    165
+                ),
 
+                productoCatalogo(
+                    "Yogurt Natural 1kg",
+                    38,
+                    "Envase 1 kg",
+                    "28/11/2026",
+                    "L-5520",
+                    "🥛",
+                    143
+                ),
 
-                {
-                    nombre:
-                        "Queso Oaxaca 400g",
+                productoCatalogo(
+                    "Yogurt Fresa 1kg",
+                    42,
+                    "Envase 1 kg",
+                    "27/11/2026",
+                    "YF-3312",
+                    "🍓",
+                    190
+                ),
 
-                    precio:
-                        68,
+                productoCatalogo(
+                    "Crema Ácida 450ml",
+                    35,
+                    "Envase 450 ml",
+                    "30/11/2026",
+                    "CR-7721",
+                    "🥛",
+                    122
+                ),
 
-                    desc:
-                        "Queso fresco tipo hebra",
+                productoCatalogo(
+                    "Mantequilla 90g",
+                    31,
+                    "Barra 90 g",
+                    "18/01/2027",
+                    "MA-8820",
+                    "🧈",
+                    156
+                ),
 
-                    caducidad:
-                        "05/12/2026",
+                productoCatalogo(
+                    "Margarina 225g",
+                    25,
+                    "Barra 225 g",
+                    "16/03/2027",
+                    "MG-225",
+                    "🧈",
+                    109
+                ),
 
-                    lote:
-                        "L-5518"
-                },
+                productoCatalogo(
+                    "Huevo Blanco 18 Piezas",
+                    52,
+                    "Cartón 18 piezas",
+                    "15/12/2026",
+                    "HB-018",
+                    "🥚",
+                    198
+                ),
 
+                productoCatalogo(
+                    "Bebida Láctea Chocolate 1L",
+                    34,
+                    "Envase 1 L",
+                    "29/11/2026",
+                    "BC-100",
+                    "🥛",
+                    132
+                ),
 
-                {
-                    nombre:
-                        "Yogurt Natural 1kg",
-
-                    precio:
-                        38,
-
-                    desc:
-                        "Con probióticos",
-
-                    caducidad:
-                        "28/11/2026",
-
-                    lote:
-                        "L-5520"
-                }
+                productoCatalogo(
+                    "Requesón 300g",
+                    44,
+                    "Envase 300 g",
+                    "06/12/2026",
+                    "RQ-300",
+                    "🧀",
+                    87
+                )
 
             ]
-
         },
 
 
-        {
+        /* =========================
+           BEBIDAS - 13
+        ========================= */
 
+        {
             nombre:
                 "BEBIDAS",
 
@@ -2387,48 +3056,145 @@ function getCategoriasBase() {
 
             productos: [
 
-                {
-                    nombre:
-                        "Refresco Cola 3L",
+                productoCatalogo(
+                    "Refresco Cola 3L",
+                    35,
+                    "Botella 3 L",
+                    "10/06/2027",
+                    "B-101",
+                    "🥤",
+                    276
+                ),
 
-                    precio:
-                        35,
+                productoCatalogo(
+                    "Agua Purificada 1.5L",
+                    14,
+                    "Botella 1.5 L",
+                    "10/06/2028",
+                    "B-102",
+                    "💧",
+                    198
+                ),
 
-                    desc:
-                        "Bebida carbonatada",
+                productoCatalogo(
+                    "Jumex Mango 450ml",
+                    18,
+                    "Botella 450 ml",
+                    "15/04/2027",
+                    "JM-451",
+                    "🥭",
+                    189
+                ),
 
-                    caducidad:
-                        "10/06/2027",
+                productoCatalogo(
+                    "Agua Natural 1L",
+                    11,
+                    "Botella 1 L",
+                    "21/07/2028",
+                    "AN-321",
+                    "💧",
+                    145
+                ),
 
-                    lote:
-                        "B-101"
-                },
+                productoCatalogo(
+                    "Refresco Manzana 600ml",
+                    19,
+                    "Botella 600 ml",
+                    "02/08/2027",
+                    "RM-602",
+                    "🍎",
+                    176
+                ),
 
+                productoCatalogo(
+                    "Bebida de Naranja 1L",
+                    24,
+                    "Envase 1 L",
+                    "19/05/2027",
+                    "NA-100",
+                    "🍊",
+                    134
+                ),
 
-                {
-                    nombre:
-                        "Agua Purificada 1.5L",
+                productoCatalogo(
+                    "Agua Mineral 600ml",
+                    16,
+                    "Botella 600 ml",
+                    "12/10/2027",
+                    "AM-612",
+                    "💧",
+                    121
+                ),
 
-                    precio:
-                        14,
+                productoCatalogo(
+                    "Jugo de Naranja 1L",
+                    32,
+                    "Envase 1 L",
+                    "05/02/2027",
+                    "JO-778",
+                    "🍊",
+                    203
+                ),
 
-                    desc:
-                        "Agua purificada",
+                productoCatalogo(
+                    "Néctar de Mango 1L",
+                    27,
+                    "Envase 1 L",
+                    "18/04/2027",
+                    "NM-100",
+                    "🥭",
+                    166
+                ),
 
-                    caducidad:
-                        "10/06/2028",
+                productoCatalogo(
+                    "Té de Limón 1.5L",
+                    25,
+                    "Botella 1.5 L",
+                    "20/05/2027",
+                    "TL-150",
+                    "🍋",
+                    115
+                ),
 
-                    lote:
-                        "B-102"
-                }
+                productoCatalogo(
+                    "Bebida de Jamaica 1L",
+                    24,
+                    "Envase 1 L",
+                    "16/05/2027",
+                    "BJ-100",
+                    "🌺",
+                    104
+                ),
+
+                productoCatalogo(
+                    "Bebida de Horchata 1L",
+                    26,
+                    "Envase 1 L",
+                    "17/05/2027",
+                    "BH-100",
+                    "🥛",
+                    98
+                ),
+
+                productoCatalogo(
+                    "Café Frío 450ml",
+                    29,
+                    "Botella 450 ml",
+                    "09/04/2027",
+                    "CF-450",
+                    "☕",
+                    142
+                )
 
             ]
-
         },
 
 
-        {
+        /* =========================
+           PAN Y TORTILLAS - 13
+        ========================= */
 
+        {
             nombre:
                 "PAN Y TORTILLAS",
 
@@ -2437,48 +3203,145 @@ function getCategoriasBase() {
 
             productos: [
 
-                {
-                    nombre:
-                        "Pan Blanco Grande",
+                productoCatalogo(
+                    "Pan Blanco Grande",
+                    42,
+                    "Pan de caja 680 g",
+                    "18/11/2026",
+                    "P-201",
+                    "🍞",
+                    167
+                ),
 
-                    precio:
-                        42,
+                productoCatalogo(
+                    "Pan Integral 680g",
+                    48,
+                    "Pan de caja integral",
+                    "20/11/2026",
+                    "PI-301",
+                    "🍞",
+                    156
+                ),
 
-                    desc:
-                        "Pan de caja 680g",
+                productoCatalogo(
+                    "Pan Dulce Surtido",
+                    38,
+                    "Caja surtida",
+                    "17/11/2026",
+                    "PD-442",
+                    "🥐",
+                    188
+                ),
 
-                    caducidad:
-                        "18/11/2026",
+                productoCatalogo(
+                    "Bolillo 6 Piezas",
+                    28,
+                    "Paquete 6 piezas",
+                    "15/11/2026",
+                    "BO-602",
+                    "🥖",
+                    142
+                ),
 
-                    lote:
-                        "P-201"
-                },
+                productoCatalogo(
+                    "Tostadas de Maíz 300g",
+                    31,
+                    "Paquete 300 g",
+                    "12/04/2027",
+                    "TM-331",
+                    "🌮",
+                    134
+                ),
 
+                productoCatalogo(
+                    "Tortillas de Maíz 1kg",
+                    24,
+                    "Paquete 1 kg",
+                    "16/11/2026",
+                    "P-202",
+                    "🌮",
+                    134
+                ),
 
-                {
-                    nombre:
-                        "Tortillas de Maíz 1kg",
+                productoCatalogo(
+                    "Tortillas de Harina 500g",
+                    27,
+                    "Paquete 500 g",
+                    "19/11/2026",
+                    "TH-501",
+                    "🌯",
+                    119
+                ),
 
-                    precio:
-                        24,
+                productoCatalogo(
+                    "Pan para Hamburguesa 8pz",
+                    45,
+                    "Paquete 8 piezas",
+                    "23/11/2026",
+                    "PH-808",
+                    "🍔",
+                    233
+                ),
 
-                    desc:
-                        "Nixtamalizadas",
+                productoCatalogo(
+                    "Pan Tostado 250g",
+                    35,
+                    "Paquete 250 g",
+                    "25/11/2026",
+                    "PT-250",
+                    "🍞",
+                    101
+                ),
 
-                    caducidad:
-                        "16/11/2026",
+                productoCatalogo(
+                    "Conchas 6 Piezas",
+                    39,
+                    "Paquete 6 piezas",
+                    "18/11/2026",
+                    "CO-606",
+                    "🥐",
+                    178
+                ),
 
-                    lote:
-                        "P-202"
-                }
+                productoCatalogo(
+                    "Galletas Marías 170g",
+                    18,
+                    "Paquete 170 g",
+                    "10/06/2027",
+                    "GM-170",
+                    "🍪",
+                    214
+                ),
+
+                productoCatalogo(
+                    "Galletas Saladas 186g",
+                    20,
+                    "Paquete 186 g",
+                    "14/07/2027",
+                    "GS-186",
+                    "🍪",
+                    132
+                ),
+
+                productoCatalogo(
+                    "Roles de Canela 6pz",
+                    42,
+                    "Paquete 6 piezas",
+                    "21/11/2026",
+                    "RC-606",
+                    "🍩",
+                    147
+                )
 
             ]
-
         },
 
 
-        {
+        /* =========================
+           LIMPIEZA - 13
+        ========================= */
 
+        {
             nombre:
                 "LIMPIEZA",
 
@@ -2487,31 +3350,289 @@ function getCategoriasBase() {
 
             productos: [
 
-                {
-                    nombre:
-                        "Detergente 1kg",
+                productoCatalogo(
+                    "Detergente 1kg",
+                    52,
+                    "Bolsa 1 kg",
+                    "01/01/2028",
+                    "C-301",
+                    "🧺",
+                    122
+                ),
 
-                    precio:
-                        52,
+                productoCatalogo(
+                    "Detergente Líquido 1L",
+                    58,
+                    "Botella 1 L",
+                    "10/02/2028",
+                    "DL-100",
+                    "🧴",
+                    156
+                ),
 
-                    desc:
-                        "Ropa blanca y color",
+                productoCatalogo(
+                    "Suavizante 1L",
+                    45,
+                    "Botella 1 L",
+                    "12/03/2028",
+                    "C-302",
+                    "🧴",
+                    143
+                ),
 
-                    caducidad:
-                        "01/01/2028",
+                productoCatalogo(
+                    "Cloro 1L",
+                    24,
+                    "Botella 1 L",
+                    "08/09/2027",
+                    "C-401",
+                    "🧴",
+                    134
+                ),
 
-                    lote:
-                        "C-301"
-                }
+                productoCatalogo(
+                    "Limpiador Multiusos 1L",
+                    34,
+                    "Botella 1 L",
+                    "20/02/2028",
+                    "C-402",
+                    "🧽",
+                    167
+                ),
+
+                productoCatalogo(
+                    "Jabón para Trastes 750ml",
+                    32,
+                    "Botella 750 ml",
+                    "15/05/2028",
+                    "C-503",
+                    "🫧",
+                    201
+                ),
+
+                productoCatalogo(
+                    "Esponjas para Cocina 4pz",
+                    18,
+                    "Paquete 4 piezas",
+                    "01/01/2030",
+                    "C-601",
+                    "🧽",
+                    109
+                ),
+
+                productoCatalogo(
+                    "Limpiavidrios 500ml",
+                    29,
+                    "Botella 500 ml",
+                    "10/08/2028",
+                    "C-701",
+                    "🪟",
+                    118
+                ),
+
+                productoCatalogo(
+                    "Desinfectante 1L",
+                    39,
+                    "Botella 1 L",
+                    "18/06/2028",
+                    "C-801",
+                    "🧴",
+                    154
+                ),
+
+                productoCatalogo(
+                    "Bolsas para Basura 30pz",
+                    35,
+                    "Paquete 30 piezas",
+                    "01/01/2030",
+                    "BB-030",
+                    "🗑️",
+                    88
+                ),
+
+                productoCatalogo(
+                    "Papel Higiénico 4pz",
+                    32,
+                    "Paquete 4 piezas",
+                    "01/01/2030",
+                    "PH-004",
+                    "🧻",
+                    189
+                ),
+
+                productoCatalogo(
+                    "Servitoallas 120 Hojas",
+                    29,
+                    "Paquete 120 hojas",
+                    "01/01/2030",
+                    "ST-120",
+                    "🧻",
+                    94
+                ),
+
+                productoCatalogo(
+                    "Jabón de Barra 3pz",
+                    27,
+                    "Paquete 3 piezas",
+                    "01/01/2030",
+                    "JB-003",
+                    "🧼",
+                    145
+                )
 
             ]
+        },
 
+
+        /* =========================
+           FRUTAS Y VERDURAS - 13
+        ========================= */
+
+        {
+            nombre:
+                "FRUTAS Y VERDURAS",
+
+            icono:
+                "🍎",
+
+            productos: [
+
+                productoCatalogo(
+                    "Manzana Roja",
+                    45,
+                    "1 kg",
+                    "10/09/2026",
+                    "FR-101",
+                    "🍎",
+                    156
+                ),
+
+                productoCatalogo(
+                    "Plátano",
+                    28,
+                    "1 kg",
+                    "11/09/2026",
+                    "FR-102",
+                    "🍌",
+                    203
+                ),
+
+                productoCatalogo(
+                    "Naranja",
+                    32,
+                    "1 kg",
+                    "13/09/2026",
+                    "FR-103",
+                    "🍊",
+                    178
+                ),
+
+                productoCatalogo(
+                    "Mandarina",
+                    36,
+                    "1 kg",
+                    "14/09/2026",
+                    "FR-104",
+                    "🍊",
+                    134
+                ),
+
+                productoCatalogo(
+                    "Limón",
+                    39,
+                    "1 kg",
+                    "13/09/2026",
+                    "FR-105",
+                    "🍋",
+                    211
+                ),
+
+                productoCatalogo(
+                    "Mango Ataulfo",
+                    49,
+                    "1 kg",
+                    "11/09/2026",
+                    "FR-106",
+                    "🥭",
+                    189
+                ),
+
+                productoCatalogo(
+                    "Papaya",
+                    35,
+                    "1 kg",
+                    "12/09/2026",
+                    "FR-107",
+                    "🥭",
+                    121
+                ),
+
+                productoCatalogo(
+                    "Jitomate Saladet",
+                    34,
+                    "1 kg",
+                    "10/09/2026",
+                    "VR-101",
+                    "🍅",
+                    198
+                ),
+
+                productoCatalogo(
+                    "Cebolla Blanca",
+                    29,
+                    "1 kg",
+                    "15/09/2026",
+                    "VR-102",
+                    "🧅",
+                    142
+                ),
+
+                productoCatalogo(
+                    "Papa Blanca",
+                    31,
+                    "1 kg",
+                    "18/09/2026",
+                    "VR-103",
+                    "🥔",
+                    167
+                ),
+
+                productoCatalogo(
+                    "Zanahoria",
+                    27,
+                    "1 kg",
+                    "16/09/2026",
+                    "VR-104",
+                    "🥕",
+                    153
+                ),
+
+                productoCatalogo(
+                    "Aguacate Hass",
+                    69,
+                    "1 kg",
+                    "12/09/2026",
+                    "VR-105",
+                    "🥑",
+                    245
+                ),
+
+                productoCatalogo(
+                    "Lechuga Romana",
+                    24,
+                    "1 pieza",
+                    "10/09/2026",
+                    "VR-106",
+                    "🥬",
+                    112
+                )
+
+            ]
         }
 
     ];
 
 }
-
 
 /* =========================
    CARRITO
