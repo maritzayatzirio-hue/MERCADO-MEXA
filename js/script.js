@@ -144,26 +144,1832 @@ function prepararEventos() {
         });
 
 
-    document
-        .getElementById("botonCuenta")
-        ?.addEventListener("click", () => {
 
+
+
+
+/* =====================================================
+   TÉRMINOS Y CONDICIONES
+===================================================== */
+
+const btnVerTerminos =
+    document.getElementById("btnVerTerminos");
+
+const modalTerminos =
+    document.getElementById("modalTerminos");
+
+const cerrarTerminos =
+    document.getElementById("cerrarTerminos");
+
+const btnAceptarTerminos =
+    document.getElementById("btnAceptarTerminos");
+
+const registroTerminos =
+    document.getElementById("registroTerminos");
+
+
+/* ABRIR TÉRMINOS */
+
+btnVerTerminos?.addEventListener("click", () => {
+
+    modalTerminos?.classList.add("activa");
+
+});
+
+
+/* CERRAR TÉRMINOS */
+
+cerrarTerminos?.addEventListener("click", () => {
+
+    modalTerminos?.classList.remove("activa");
+
+});
+
+
+/* ACEPTAR TÉRMINOS */
+
+btnAceptarTerminos?.addEventListener("click", () => {
+
+    if (registroTerminos) {
+
+        registroTerminos.checked = true;
+
+    }
+
+    modalTerminos?.classList.remove("activa");
+
+});
+/* =====================================================
+   ELEMENTOS DE CUENTA
+===================================================== */
+
+const botonCuenta =
+    document.getElementById("botonCuenta");
+
+const modalCuenta =
+    document.getElementById("modalCuenta");
+
+const modalLogin =
+    document.getElementById("modalLogin");
+
+const modalRegistro =
+    document.getElementById("modalRegistro");
+
+const cerrarCuenta =
+    document.getElementById("cerrarCuenta");
+
+const cerrarLogin =
+    document.getElementById("cerrarLogin");
+
+const cerrarRegistro =
+    document.getElementById("cerrarRegistro");
+
+const btnAbrirLogin =
+    document.getElementById("btnAbrirLogin");
+
+const btnAbrirRegistro =
+    document.getElementById("btnAbrirRegistro");
+
+const btnRegistroDesdeLogin =
+    document.getElementById("btnRegistroDesdeLogin");
+
+const btnLoginDesdeRegistro =
+    document.getElementById("btnLoginDesdeRegistro");
+
+const formLogin =
+    document.getElementById("formLogin");
+
+const formRegistro =
+    document.getElementById("formRegistro");
+
+
+/* =====================================================
+   LEER CUENTAS
+===================================================== */
+
+function obtenerCuentas() {
+
+    try {
+
+        return JSON.parse(
+            localStorage.getItem(
+                "cuentasMexa"
+            ) || "[]"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Error al leer cuentas:",
+            error
+        );
+
+        return [];
+
+    }
+
+}
+
+
+/* =====================================================
+   GUARDAR CUENTAS
+===================================================== */
+
+function guardarCuentas(cuentas) {
+
+    localStorage.setItem(
+        "cuentasMexa",
+        JSON.stringify(cuentas)
+    );
+
+}
+
+
+/* =====================================================
+   LEER SESIÓN
+===================================================== */
+
+function obtenerSesionActual() {
+
+    try {
+
+        return JSON.parse(
+            localStorage.getItem(
+                "sesionMexa"
+            ) || "null"
+        );
+
+    } catch (error) {
+
+        return null;
+
+    }
+
+}
+
+
+/* =====================================================
+   GUARDAR SESIÓN
+===================================================== */
+
+function guardarSesion(cuenta) {
+
+    /*
+       La sesión NO guarda password.
+    */
+
+    const sesion = {
+
+        id:
+            cuenta.id,
+
+        nombre:
+            cuenta.nombre,
+
+        apellidos:
+            cuenta.apellidos,
+
+        correo:
+            cuenta.correo,
+
+        telefono:
+            cuenta.telefono,
+
+        rol:
+            cuenta.rol
+
+    };
+
+
+    localStorage.setItem(
+        "sesionMexa",
+        JSON.stringify(
+            sesion
+        )
+    );
+
+}
+
+
+/* =====================================================
+   CERRAR SESIÓN
+===================================================== */
+
+function cerrarSesionMexa() {
+
+    localStorage.removeItem(
+        "sesionMexa"
+    );
+
+    actualizarBotonCuenta();
+
+}
+
+
+/* =====================================================
+   NORMALIZAR CORREO
+===================================================== */
+
+function normalizarCorreo(
+    correo
+) {
+
+    return String(
+        correo
+    )
+        .trim()
+        .toLowerCase();
+
+}
+
+
+/* =====================================================
+   CREAR ID
+===================================================== */
+
+function crearIdCuenta() {
+
+    return (
+
+        "MX-" +
+
+        Date.now() +
+
+        "-" +
+
+        Math.random()
+            .toString(36)
+            .substring(2, 8)
+            .toUpperCase()
+
+    );
+
+}
+
+
+/* =====================================================
+   HASH DE CONTRASEÑA
+===================================================== */
+
+async function hashPassword(
+    password
+) {
+
+    /*
+       No guardamos la contraseña
+       directamente.
+    */
+
+    if (
+        window.crypto &&
+        window.crypto.subtle
+    ) {
+
+        const datos =
+            new TextEncoder()
+                .encode(
+                    password
+                );
+
+        const buffer =
+            await crypto.subtle.digest(
+                "SHA-256",
+                datos
+            );
+
+        return Array
+            .from(
+                new Uint8Array(
+                    buffer
+                )
+            )
+            .map(
+                byte =>
+                    byte
+                        .toString(16)
+                        .padStart(
+                            2,
+                            "0"
+                        )
+            )
+            .join("");
+
+    }
+
+
+    /* Respaldo para pruebas locales */
+
+    let hash = 0;
+
+    for (
+        let i = 0;
+        i < password.length;
+        i++
+    ) {
+
+        hash =
+            (
+                (
+                    hash << 5
+                ) -
+                hash
+            ) +
+            password.charCodeAt(i);
+
+        hash |= 0;
+
+    }
+
+    return String(hash);
+
+}
+
+
+/* =====================================================
+   NOTIFICACIÓN
+===================================================== */
+
+function mostrarNotificacionCuenta(
+    titulo,
+    mensaje
+) {
+
+    const notificacion =
+        document.getElementById(
+            "notificacionCuenta"
+        );
+
+    const tituloElemento =
+        document.getElementById(
+            "tituloNotificacion"
+        );
+
+    const mensajeElemento =
+        document.getElementById(
+            "mensajeNotificacion"
+        );
+
+
+    if (!notificacion)
+        return;
+
+
+    if (tituloElemento) {
+
+        tituloElemento.textContent =
+            titulo;
+
+    }
+
+
+    if (mensajeElemento) {
+
+        mensajeElemento.textContent =
+            mensaje;
+
+    }
+
+
+    notificacion.classList.add(
+        "mostrar"
+    );
+
+
+    setTimeout(
+        () => {
+
+            notificacion.classList.remove(
+                "mostrar"
+            );
+
+        },
+        3500
+    );
+
+}
+/* =====================================================
+   ABRIR MI CUENTA
+===================================================== */
+
+botonCuenta?.addEventListener(
+    "click",
+    () => {
+
+        const sesion =
+            obtenerSesionActual();
+
+
+        if (sesion) {
+
+            mostrarCuentaPorRol(
+                sesion
+            );
+
+        } else {
+
+            restaurarCuentaInicial();
+
+        }
+
+
+        modalCuenta?.classList.add(
+            "activa"
+        );
+
+    }
+);
+
+/* =====================================================
+   ABRIR LOGIN
+===================================================== */
+
+btnAbrirLogin?.addEventListener(
+    "click",
+    () => {
+
+        modalCuenta?.classList.remove(
+            "activa"
+        );
+
+        modalLogin?.classList.add(
+            "activa"
+        );
+
+    }
+);
+
+
+/* =====================================================
+   ABRIR REGISTRO
+===================================================== */
+
+btnAbrirRegistro?.addEventListener(
+    "click",
+    () => {
+
+        modalCuenta?.classList.remove(
+            "activa"
+        );
+
+        modalRegistro?.classList.add(
+            "activa"
+        );
+
+    }
+);
+
+
+/* =====================================================
+   REGISTRO DESDE LOGIN
+===================================================== */
+
+btnRegistroDesdeLogin?.addEventListener(
+    "click",
+    () => {
+
+        modalLogin?.classList.remove(
+            "activa"
+        );
+
+        modalRegistro?.classList.add(
+            "activa"
+        );
+
+    }
+);
+
+
+/* =====================================================
+   LOGIN DESDE REGISTRO
+===================================================== */
+
+btnLoginDesdeRegistro?.addEventListener(
+    "click",
+    () => {
+
+        modalRegistro?.classList.remove(
+            "activa"
+        );
+
+        modalLogin?.classList.add(
+            "activa"
+        );
+
+    }
+);
+
+
+/* =====================================================
+   CERRAR CUENTA
+===================================================== */
+
+cerrarCuenta?.addEventListener(
+    "click",
+    () => {
+
+        modalCuenta?.classList.remove(
+            "activa"
+        );
+
+    }
+);
+
+
+/* =====================================================
+   CERRAR LOGIN
+===================================================== */
+
+cerrarLogin?.addEventListener(
+    "click",
+    () => {
+
+        modalLogin?.classList.remove(
+            "activa"
+        );
+
+    }
+);
+
+
+/* =====================================================
+   CERRAR REGISTRO
+===================================================== */
+
+cerrarRegistro?.addEventListener(
+    "click",
+    () => {
+
+        modalRegistro?.classList.remove(
+            "activa"
+        );
+
+    }
+);
+
+
+/* =====================================================
+   REGISTRAR NUEVA CUENTA
+===================================================== */
+
+formRegistro?.addEventListener(
+    "submit",
+    async e => {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+
+        /* =========================
+           DATOS
+        ========================= */
+
+        const nombre =
             document
-                .getElementById("modalCuenta")
-                ?.classList.add("activa");
+                .getElementById(
+                    "registroNombre"
+                )
+                ?.value
+                .trim() || "";
 
-        });
 
+        const apellidos =
+            document
+                .getElementById(
+                    "registroApellidos"
+                )
+                ?.value
+                .trim() || "";
+
+
+        const correo =
+            normalizarCorreo(
+                document
+                    .getElementById(
+                        "registroCorreo"
+                    )
+                    ?.value || ""
+            );
+
+
+        const telefono =
+            document
+                .getElementById(
+                    "registroTelefono"
+                )
+                ?.value
+                .trim() || "";
+
+
+        const password =
+            document
+                .getElementById(
+                    "registroPassword"
+                )
+                ?.value || "";
+
+
+        const passwordConfirm =
+            document
+                .getElementById(
+                    "registroPasswordConfirm"
+                )
+                ?.value || "";
+
+
+        const aceptaTerminos =
+            document
+                .getElementById(
+                    "registroTerminos"
+                )
+                ?.checked || false;
+
+
+        /* =========================
+           VALIDAR CAMPOS
+        ========================= */
+
+        if (
+            !nombre ||
+            !apellidos ||
+            !correo ||
+            !telefono ||
+            !password ||
+            !passwordConfirm
+        ) {
+
+            mostrarNotificacionCuenta(
+                "Datos incompletos",
+                "Completa todos los campos."
+            );
+
+            return;
+
+        }
+
+
+        /* =========================
+           VALIDAR CORREO
+        ========================= */
+
+        const correoValido =
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                .test(
+                    correo
+                );
+
+
+        if (!correoValido) {
+
+            mostrarNotificacionCuenta(
+                "Correo no válido",
+                "Ingresa un correo electrónico válido."
+            );
+
+            return;
+
+        }
+
+
+        /* =========================
+           VALIDAR PASSWORD
+        ========================= */
+
+        if (
+            password.length < 6
+        ) {
+
+            mostrarNotificacionCuenta(
+                "Contraseña no válida",
+                "La contraseña debe tener al menos 6 caracteres."
+            );
+
+            return;
+
+        }
+
+
+        /* =========================
+           CONFIRMAR PASSWORD
+        ========================= */
+
+        if (
+            password !==
+            passwordConfirm
+        ) {
+
+            mostrarNotificacionCuenta(
+                "Las contraseñas no coinciden",
+                "Escribe la misma contraseña en ambos campos."
+            );
+
+            return;
+
+        }
+
+
+        /* =========================
+           TÉRMINOS
+        ========================= */
+
+        if (!aceptaTerminos) {
+
+            mostrarNotificacionCuenta(
+                "Acepta los términos",
+                "Debes aceptar los términos y condiciones."
+            );
+
+            return;
+
+        }
+
+
+        /* =========================
+           OBTENER CUENTAS
+        ========================= */
+
+        const cuentas =
+            obtenerCuentas();
+
+
+        /* =========================
+           COMPROBAR CORREO
+        ========================= */
+
+        const existe =
+            cuentas.some(
+                cuenta =>
+                    normalizarCorreo(
+                        cuenta.correo
+                    ) === correo
+            );
+
+
+        if (existe) {
+
+            mostrarNotificacionCuenta(
+                "Correo ya registrado",
+                "Ya existe una cuenta con ese correo."
+            );
+
+            return;
+
+        }
+
+
+        /* =========================
+           CREAR HASH
+        ========================= */
+
+        const passwordHash =
+            await hashPassword(
+                password
+            );
+
+
+        /* =========================
+           CREAR CUENTA
+        =========================
+
+           TODOS LOS REGISTROS
+           PÚBLICOS SON USUARIO.
+        */
+
+        const nuevaCuenta = {
+
+            id:
+                crearIdCuenta(),
+
+            nombre,
+
+            apellidos,
+
+            correo,
+
+            telefono,
+
+            passwordHash,
+
+            rol:
+                "usuario",
+
+            activo:
+                true,
+
+            fechaRegistro:
+                new Date()
+                    .toISOString()
+
+        };
+
+
+        /* =========================
+           GUARDAR
+        ========================= */
+
+        cuentas.push(
+            nuevaCuenta
+        );
+
+        guardarCuentas(
+            cuentas
+        );
+
+
+        /* =========================
+           LIMPIAR FORMULARIO
+        ========================= */
+
+        formRegistro.reset();
+
+
+        /* =========================
+           CERRAR REGISTRO
+        ========================= */
+
+        modalRegistro?.classList.remove(
+            "activa"
+        );
+
+
+        /* =========================
+           ABRIR LOGIN
+        ========================= */
+
+        modalLogin?.classList.add(
+            "activa"
+        );
+
+
+        /* =========================
+           COLOCAR CORREO
+        ========================= */
+
+        const loginCorreo =
+            document.getElementById(
+                "loginCorreo"
+            );
+
+        if (loginCorreo) {
+
+            loginCorreo.value =
+                correo;
+
+        }
+
+
+        mostrarNotificacionCuenta(
+            "¡Cuenta creada!",
+            "Tu cuenta fue registrada correctamente. Ahora inicia sesión."
+        );
+
+    }
+);
+
+
+/* =====================================================
+   INICIAR SESIÓN
+===================================================== */
+
+formLogin?.addEventListener(
+    "submit",
+    async e => {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+
+        /* =========================
+           DATOS
+        ========================= */
+
+        const correo =
+            normalizarCorreo(
+                document
+                    .getElementById(
+                        "loginCorreo"
+                    )
+                    ?.value || ""
+            );
+
+
+        const password =
+            document
+                .getElementById(
+                    "loginPassword"
+                )
+                ?.value || "";
+
+
+        /* =========================
+           VALIDAR
+        ========================= */
+
+        if (
+            !correo ||
+            !password
+        ) {
+
+            mostrarNotificacionCuenta(
+                "Datos incompletos",
+                "Completa correo y contraseña."
+            );
+
+            return;
+
+        }
+
+
+        /* =========================
+           CORREO
+        ========================= */
+
+        const correoValido =
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                .test(
+                    correo
+                );
+
+
+        if (!correoValido) {
+
+            mostrarNotificacionCuenta(
+                "Correo no válido",
+                "Ingresa un correo electrónico válido."
+            );
+
+            return;
+
+        }
+
+
+        /* =========================
+           PASSWORD
+        ========================= */
+
+        if (
+            password.length < 6
+        ) {
+
+            mostrarNotificacionCuenta(
+                "Contraseña no válida",
+                "La contraseña debe tener al menos 6 caracteres."
+            );
+
+            return;
+
+        }
+
+
+        /* =========================
+           BUSCAR CUENTA
+        ========================= */
+
+        const cuentas =
+            obtenerCuentas();
+
+
+        const cuenta =
+            cuentas.find(
+                c =>
+                    normalizarCorreo(
+                        c.correo
+                    ) === correo
+            );
+
+
+        if (!cuenta) {
+
+            mostrarNotificacionCuenta(
+                "Cuenta no encontrada",
+                "No existe una cuenta con ese correo."
+            );
+
+            return;
+
+        }
+
+
+        /* =========================
+           CUENTA ACTIVA
+        ========================= */
+
+        if (
+            cuenta.activo === false
+        ) {
+
+            mostrarNotificacionCuenta(
+                "Cuenta desactivada",
+                "Esta cuenta no está disponible."
+            );
+
+            return;
+
+        }
+
+
+        /* =========================
+           COMPROBAR PASSWORD
+        ========================= */
+
+        const passwordHash =
+            await hashPassword(
+                password
+            );
+
+
+        if (
+            cuenta.passwordHash !==
+            passwordHash
+        ) {
+
+            mostrarNotificacionCuenta(
+                "Contraseña incorrecta",
+                "La contraseña ingresada no es correcta."
+            );
+
+            return;
+
+        }
+
+
+        /* =========================
+           GUARDAR SESIÓN
+        ========================= */
+
+        guardarSesion(
+            cuenta
+        );
+
+
+        /* =========================
+           CERRAR LOGIN
+        ========================= */
+
+        modalLogin?.classList.remove(
+            "activa"
+        );
+
+
+        /* =========================
+           ACTUALIZAR BOTÓN
+        ========================= */
+
+        actualizarBotonCuenta();
+
+
+        /* =========================
+           MENSAJE SEGÚN ROL
+        ========================= */
+
+        let mensaje =
+            "Has iniciado sesión correctamente.";
+
+
+        if (
+            cuenta.rol === "chofer"
+        ) {
+
+            mensaje =
+                "Bienvenido al panel de chofer.";
+
+        }
+
+
+        if (
+            cuenta.rol === "admin"
+        ) {
+
+            mensaje =
+                "Bienvenido al panel de administración.";
+
+        }
+
+
+        mostrarNotificacionCuenta(
+            "¡Sesión iniciada!",
+            `Hola ${cuenta.nombre}. ${mensaje}`
+        );
+
+
+        formLogin.reset();
+
+    }
+);
+
+
+/* =====================================================
+   ACTUALIZAR BOTÓN
+===================================================== */
+
+function actualizarBotonCuenta() {
+
+    const boton =
+        document.getElementById(
+            "botonCuenta"
+        );
+
+
+    if (!boton)
+        return;
+
+
+    const sesion =
+        obtenerSesionActual();
+
+
+    if (!sesion) {
+
+        boton.textContent =
+            "●";
+
+        boton.title =
+            "Cuenta";
+
+        return;
+
+    }
+
+
+    boton.textContent =
+        sesion.nombre
+            ? sesion.nombre
+                .charAt(0)
+                .toUpperCase()
+            : "U";
+
+
+    boton.title =
+        `${sesion.nombre} — ${sesion.rol}`;
+
+}
+
+/* =====================================================
+   RESTAURAR CUENTA INICIAL
+===================================================== */
+
+function restaurarCuentaInicial() {
+
+    if (!modalCuenta)
+        return;
+
+
+    const contenido =
+        modalCuenta.querySelector(
+            ".contenido-modal"
+        );
+
+
+    if (!contenido)
+        return;
+
+
+    contenido.innerHTML = `
+
+        <button
+            class="cerrar-modal"
+            id="cerrarCuenta"
+            type="button">
+
+            ×
+
+        </button>
+
+
+        <div class="cuenta-icon">
+
+            ●
+
+        </div>
+
+
+        <span class="section-label">
+
+            MERCADO MEXA
+
+        </span>
+
+
+        <h2>
+
+            MI CUENTA
+
+        </h2>
+
+
+        <p>
+
+            Inicia sesión o crea una cuenta
+            para disfrutar de Mercado Mexa.
+
+        </p>
+
+
+        <button
+            class="btn-naranja grande"
+            id="btnAbrirLogin"
+            type="button">
+
+            INICIAR SESIÓN
+
+        </button>
+
+
+        <button
+            class="btn-outline grande"
+            id="btnAbrirRegistro"
+            type="button">
+
+            CREAR CUENTA
+
+        </button>
+
+    `;
+
+
+    /* =================================================
+       CERRAR CUENTA
+    ================================================= */
 
     document
-        .getElementById("cerrarCuenta")
-        ?.addEventListener("click", () => {
+        .getElementById(
+            "cerrarCuenta"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
 
-            document
-                .getElementById("modalCuenta")
-                ?.classList.remove("activa");
+                modalCuenta?.classList.remove(
+                    "activa"
+                );
 
-        });
+            }
+        );
+
+
+    /* =================================================
+       ABRIR LOGIN
+    ================================================= */
+
+    document
+        .getElementById(
+            "btnAbrirLogin"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                modalCuenta?.classList.remove(
+                    "activa"
+                );
+
+                modalLogin?.classList.add(
+                    "activa"
+                );
+
+            }
+        );
+
+
+    /* =================================================
+       ABRIR REGISTRO
+    ================================================= */
+
+    document
+        .getElementById(
+            "btnAbrirRegistro"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                modalCuenta?.classList.remove(
+                    "activa"
+                );
+
+                modalRegistro?.classList.add(
+                    "activa"
+                );
+
+            }
+        );
+
+}
+/* =====================================================
+   MOSTRAR CUENTA SEGÚN ROL
+===================================================== */
+
+function mostrarCuentaPorRol(
+    sesion
+) {
+
+    if (!modalCuenta)
+        return;
+
+
+    /*
+       Tu modal debe tener
+       .contenido-modal
+    */
+
+    const contenido =
+        modalCuenta.querySelector(
+            ".contenido-modal"
+        );
+
+
+    if (!contenido) {
+
+        console.warn(
+            "No se encontró .contenido-modal dentro de #modalCuenta"
+        );
+
+        return;
+
+    }
+
+
+    /* =========================
+       DATOS DEL ROL
+    ========================= */
+
+    let rolTexto =
+        "USUARIO";
+
+    let rolIcono =
+        "👤";
+
+
+    if (
+        sesion.rol === "chofer"
+    ) {
+
+        rolTexto =
+            "CHOFER";
+
+        rolIcono =
+            "🚚";
+
+    }
+
+
+    if (
+        sesion.rol === "admin"
+    ) {
+
+        rolTexto =
+            "ADMINISTRADOR";
+
+        rolIcono =
+            "⚙️";
+
+    }
+
+
+    /* =========================
+       OPCIONES USUARIO
+    ========================= */
+
+    let opciones = "";
+
+
+    if (
+        sesion.rol ===
+        "usuario"
+    ) {
+
+        opciones = `
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                👤 Mi perfil
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                ❤️ Mis favoritos
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                🛒 Mi lista
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                📦 Mis pedidos
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                📍 Mis direcciones
+            </button>
+
+        `;
+
+    }
+
+
+    /* =========================
+       OPCIONES CHOFER
+    ========================= */
+
+    if (
+        sesion.rol ===
+        "chofer"
+    ) {
+
+        opciones = `
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                🚚 Panel de chofer
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                📦 Pedidos asignados
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                🗺️ Mis rutas
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                ✅ Entregas realizadas
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                👤 Mi perfil
+            </button>
+
+        `;
+
+    }
+
+
+    /* =========================
+       OPCIONES ADMIN
+    ========================= */
+
+    if (
+        sesion.rol ===
+        "admin"
+    ) {
+
+        opciones = `
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                ⚙️ Panel administrador
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                👥 Usuarios
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                🚚 Choferes
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                📦 Pedidos
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                🏪 Tiendas
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                📊 Reportes
+            </button>
+
+            <button
+                type="button"
+                class="opcion-cuenta"
+            >
+                ⚙️ Configuración
+            </button>
+
+        `;
+
+    }
+
+
+    /* =========================
+       PINTAR CUENTA
+    ========================= */
+
+    contenido.innerHTML = `
+
+        <button
+            class="cerrar-modal"
+            id="cerrarCuentaRol"
+            type="button"
+        >
+            ×
+        </button>
+
+
+        <div class="cuenta-perfil">
+
+            <div class="cuenta-avatar">
+
+                ${
+                    sesion.nombre
+                        ? escapeHTML(
+                            sesion.nombre
+                                .charAt(0)
+                                .toUpperCase()
+                        )
+                        : "U"
+                }
+
+            </div>
+
+
+            <h2>
+                Hola,
+                ${escapeHTML(
+                    sesion.nombre
+                )}
+            </h2>
+
+
+            <p>
+                ${escapeHTML(
+                    sesion.correo
+                )}
+            </p>
+
+
+            <span class="rol-cuenta">
+
+                ${rolIcono}
+                ${rolTexto}
+
+            </span>
+
+        </div>
+
+
+        <div class="cuenta-opciones">
+
+            ${opciones}
+
+            <button
+                type="button"
+                class="
+                    opcion-cuenta
+                    cerrar-sesion-cuenta
+                "
+                id="btnCerrarSesionMexa"
+            >
+                🚪 Cerrar sesión
+            </button>
+
+        </div>
+
+    `;
+
+
+    /* =========================
+       CERRAR CUENTA
+    ========================= */
+
+    document
+        .getElementById(
+            "cerrarCuentaRol"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                modalCuenta.classList.remove(
+                    "activa"
+                );
+
+            }
+        );
+
+
+    /* =========================
+       CERRAR SESIÓN
+    ========================= */
+
+    document
+        .getElementById(
+            "btnCerrarSesionMexa"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                cerrarSesionMexa();
+
+
+                modalCuenta.classList.remove(
+                    "activa"
+                );
+
+
+                mostrarNotificacionCuenta(
+                    "Sesión cerrada",
+                    "Has cerrado tu sesión correctamente."
+                );
+
+            }
+        );
+
+}
+
+
+/* =====================================================
+   CUENTAS INTERNAS DE PRUEBA
+===================================================== */
+
+async function crearCuentaInterna(
+    nombre,
+    apellidos,
+    correo,
+    telefono,
+    password,
+    rol
+) {
+
+    const cuentas =
+        obtenerCuentas();
+
+
+    const correoNormalizado =
+        normalizarCorreo(
+            correo
+        );
+
+
+    const existe =
+        cuentas.some(
+            cuenta =>
+                normalizarCorreo(
+                    cuenta.correo
+                ) === correoNormalizado
+        );
+
+
+    if (existe)
+        return;
+
+
+    const passwordHash =
+        await hashPassword(
+            password
+        );
+
+
+    cuentas.push({
+
+        id:
+            crearIdCuenta(),
+
+        nombre,
+
+        apellidos,
+
+        correo:
+            correoNormalizado,
+
+        telefono,
+
+        passwordHash,
+
+        rol,
+
+        activo:
+            true,
+
+        fechaRegistro:
+            new Date()
+                .toISOString(),
+
+        cuentaInterna:
+            true
+
+    });
+
+
+    guardarCuentas(
+        cuentas
+    );
+
+}
+
+
+/* =====================================================
+   CREAR CUENTAS DE PRUEBA
+===================================================== */
+
+async function crearCuentasDemoRoles() {
+
+    /*
+       CHOFER
+       correo:
+       chofer@mexamexa.com
+
+       contraseña:
+       Chofer123
+    */
+
+    await crearCuentaInterna(
+
+        "Carlos",
+
+        "Ramírez",
+
+        "chofer@mexamexa.com",
+
+        "9510000000",
+
+        "Chofer123",
+
+        "chofer"
+
+    );
+
+
+    /*
+       ADMIN
+       correo:
+       admin@mexamexa.com
+
+       contraseña:
+       Admin123
+    */
+
+    await crearCuentaInterna(
+
+        "Administrador",
+
+        "Mercado Mexa",
+
+        "admin@mexamexa.com",
+
+        "9511111111",
+
+        "Admin123",
+
+        "admin"
+
+    );
+
+}
+
+
+/* =====================================================
+   INICIAR CUENTAS
+===================================================== */
+
+crearCuentasDemoRoles();
+
+actualizarBotonCuenta();
 
 
     document
@@ -1907,6 +3713,7 @@ function entrarTienda(id) {
     abrirCatalogo(tienda);
 }
 
+
 /* =========================
    ABRIR CATÁLOGO
 ========================= */
@@ -3631,6 +5438,7 @@ function getCategoriasBase() {
         }
 
     ];
+    
 
 }
 
