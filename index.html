@@ -234,94 +234,6 @@
         <section class="contenido">
 
 
-            <!-- =========================
-                 HERO
-            ========================= -->
-
-            <section
-                class="hero"
-                id="inicio">
-
-                <div class="hero-copy">
-
-                    <div class="linea-naranja"></div>
-
-                    <div>
-
-                        <span class="eyebrow">
-                            MERCADO MEXA · LOCALIZADOR INTELIGENTE
-                        </span>
-
-                        <h1>
-                            TU MERCADO
-                            <br>
-                            <em>MÁS CERCA</em>
-                        </h1>
-
-                        <p>
-                            Encuentra tiendas Neto cercanas,
-                            calcula rutas reales y arma tu lista
-                            del súper desde un solo lugar.
-                        </p>
-
-
-                        <div class="hero-actions">
-
-                            <button
-                                class="btn-naranja grande"
-                                id="heroUbicacion">
-
-                                ⌖ ENCONTRAR MI TIENDA
-
-                            </button>
-
-
-                            <button
-                                class="btn-outline grande"
-                                id="heroVerMapa">
-
-                                VER MAPA →
-
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="hero-visual">
-
-                    <div class="hero-card">
-
-                        <div class="hero-cart">
-                            🛒
-                        </div>
-
-                        <div class="hero-tag">
-
-                            TU SÚPER,
-                            <br>
-
-                            <strong>
-                                MÁS FÁCIL.
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="hero-dot dot-one"></div>
-                    <div class="hero-dot dot-two"></div>
-
-                    <div class="hero-line"></div>
-
-                </div>
-
-            </section>
-
 
             <!-- =========================
                  INDICADORES
@@ -706,42 +618,42 @@
 
     <div class="contenido-modal cuenta-modal">
 
+        <!-- CERRAR -->
         <button
             class="cerrar-modal"
             id="cerrarCuenta">
-
             ×
-
         </button>
 
-
+        <!-- ICONO -->
         <div class="cuenta-icon">
             ●
         </div>
-
 
         <span class="section-label">
             MERCADO MEXA
         </span>
 
-
         <h2>
-            INICIAR SESIÓN
+            MI CUENTA
         </h2>
 
-
         <p>
-            Accede para guardar tus preferencias
-            y disfrutar una experiencia más personalizada.
+            Inicia sesión o crea una cuenta
+            para disfrutar de Mercado Mexa.
         </p>
 
-
-        <button class="btn-naranja grande">
+        <!-- INICIAR SESIÓN -->
+        <button
+            class="btn-naranja grande"
+            id="btnAbrirLogin">
             INICIAR SESIÓN
         </button>
 
-
-        <button class="btn-outline grande">
+        <!-- CREAR CUENTA -->
+        <button
+            class="btn-outline grande"
+            id="btnAbrirRegistro">
             CREAR CUENTA
         </button>
 
@@ -750,9 +662,435 @@
 </div>
 
 
+<!-- =========================
+     MODAL INICIAR SESIÓN
+========================= -->
+
+<div
+    class="ventana-modal"
+    id="modalLogin">
+
+    <div class="contenido-modal cuenta-modal">
+
+        <button
+            class="cerrar-modal"
+            id="cerrarLogin">
+            ×
+        </button>
+
+        <div class="cuenta-icon">
+            ●
+        </div>
+
+        <span class="section-label">
+            MERCADO MEXA
+        </span>
+
+        <h2>
+            INICIAR SESIÓN
+        </h2>
+
+        <p>
+            Ingresa a tu cuenta para continuar.
+        </p>
+
+        <form id="formLogin">
+
+            <!-- CORREO -->
+            <div class="campo-cuenta">
+
+                <label for="loginCorreo">
+                    Correo electrónico
+                </label>
+
+                <input
+                    type="email"
+                    id="loginCorreo"
+                    name="correo"
+                    placeholder="correo@ejemplo.com"
+                    autocomplete="email"
+                    required>
+
+            </div>
+
+            <!-- CONTRASEÑA -->
+            <div class="campo-cuenta">
+
+                <label for="loginPassword">
+                    Contraseña
+                </label>
+
+                <input
+                    type="password"
+                    id="loginPassword"
+                    name="password"
+                    placeholder="Tu contraseña"
+                    autocomplete="current-password"
+                    required>
+
+            </div>
+
+            <!-- BOTÓN -->
+            <button
+    class="btn-naranja grande"
+    id="btnAbrirLogin"
+    type="button">
+    INICIAR SESIÓN
+</button>
+
+        </form>
+
+        <button
+    class="btn-link-cuenta"
+    id="btnRecuperarPassword"
+    type="button">
+    ¿Olvidaste tu contraseña?
+</button>
+
+        <div class="separador-cuenta">
+            <span>¿No tienes cuenta?</span>
+        </div>
+
+        <button
+    class="btn-outline grande"
+    id="btnAbrirRegistro"
+    type="button">
+    CREAR CUENTA
+</button>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     MODAL CREAR CUENTA
+========================= -->
+
+<div
+    class="ventana-modal"
+    id="modalRegistro">
+
+    <div class="contenido-modal cuenta-modal">
+
+        <button
+            class="cerrar-modal"
+            id="cerrarRegistro">
+            ×
+        </button>
+
+        <div class="cuenta-icon">
+            ●
+        </div>
+
+        <span class="section-label">
+            MERCADO MEXA
+        </span>
+
+        <h2>
+            CREAR CUENTA
+        </h2>
+
+        <p>
+            Crea tu cuenta para comenzar a utilizar
+            Mercado Mexa.
+        </p>
+
+        <form id="formRegistro">
+
+            <!-- NOMBRE -->
+            <div class="campo-cuenta">
+
+                <label for="registroNombre">
+                    Nombre
+                </label>
+
+                <input
+                    type="text"
+                    id="registroNombre"
+                    name="nombre"
+                    placeholder="Tu nombre"
+                    autocomplete="given-name"
+                    required>
+
+            </div>
+
+            <!-- APELLIDOS -->
+            <div class="campo-cuenta">
+
+                <label for="registroApellidos">
+                    Apellidos
+                </label>
+
+                <input
+                    type="text"
+                    id="registroApellidos"
+                    name="apellidos"
+                    placeholder="Tus apellidos"
+                    autocomplete="family-name"
+                    required>
+
+            </div>
+
+            <!-- CORREO -->
+            <div class="campo-cuenta">
+
+                <label for="registroCorreo">
+                    Correo electrónico
+                </label>
+
+                <input
+                    type="email"
+                    id="registroCorreo"
+                    name="correo"
+                    placeholder="correo@ejemplo.com"
+                    autocomplete="email"
+                    required>
+
+            </div>
+
+            <!-- TELÉFONO -->
+            <div class="campo-cuenta">
+
+                <label for="registroTelefono">
+                    Teléfono
+                </label>
+
+                <input
+                    type="tel"
+                    id="registroTelefono"
+                    name="telefono"
+                    placeholder="10 dígitos"
+                    autocomplete="tel"
+                    maxlength="10"
+                    required>
+
+            </div>
+
+            <!-- CONTRASEÑA -->
+            <div class="campo-cuenta">
+
+                <label for="registroPassword">
+                    Contraseña
+                </label>
+
+                <input
+                    type="password"
+                    id="registroPassword"
+                    name="password"
+                    placeholder="Crea una contraseña"
+                    autocomplete="new-password"
+                    required>
+
+            </div>
+
+            <!-- CONFIRMAR CONTRASEÑA -->
+            <div class="campo-cuenta">
+
+                <label for="registroPasswordConfirm">
+                    Confirmar contraseña
+                </label>
+
+                <input
+                    type="password"
+                    id="registroPasswordConfirm"
+                    name="passwordConfirm"
+                    placeholder="Repite tu contraseña"
+                    autocomplete="new-password"
+                    required>
+
+            </div>
+
+           
+<!-- TÉRMINOS -->
+<label class="terminos-cuenta">
+
+    <input
+        type="checkbox"
+        id="registroTerminos"
+        required>
+
+    <span>
+        Acepto los
+        <button
+            type="button"
+            class="btnVerTerminos"
+            id="btnVerTerminos">
+            términos y condiciones
+        </button>
+        de Mercado Mexa.
+    </span>
+
+</label>
+
+            <!-- BOTÓN -->
+            <button
+                type="submit"
+                class="btn-naranja grande">
+                CREAR CUENTA
+            </button>
+
+        </form>
+
+        <div class="separador-cuenta">
+            <span>¿Ya tienes una cuenta?</span>
+        </div>
+
+        <button
+            class="btn-outline grande"
+            id="btnLoginDesdeRegistro">
+            INICIAR SESIÓN
+        </button>
+
+    </div>
+
+</div>
+<!-- =========================
+     MODAL TÉRMINOS Y CONDICIONES
+========================= -->
+
+<div
+    class="ventana-modal"
+    id="modalTerminos">
+
+    <div class="contenido-modal terminos-modal">
+
+        <!-- CERRAR -->
+        <button
+            class="cerrar-modal"
+            id="cerrarTerminos">
+            ×
+        </button>
+
+        <!-- ICONO -->
+        <div class="terminos-icono">
+            ✓
+        </div>
+
+        <span class="section-label">
+            MERCADO MEXA
+        </span>
+
+        <h2>
+            TÉRMINOS Y CONDICIONES
+        </h2>
+
+        <!-- TEXTO CON SCROLL -->
+        <div class="texto-terminos">
+
+            <h3>1. Aceptación</h3>
+
+            <p>
+                Al crear una cuenta y utilizar Mercado Mexa,
+                el usuario acepta los presentes términos y
+                condiciones de uso.
+            </p>
+
+
+            <h3>2. Uso de la plataforma</h3>
+
+            <p>
+                Mercado Mexa proporciona herramientas para
+                localizar tiendas, consultar productos,
+                crear listas de compra y utilizar los
+                servicios disponibles dentro de la plataforma.
+            </p>
+
+
+            <h3>3. Seguridad de la cuenta</h3>
+
+            <p>
+                El usuario es responsable de mantener la
+                confidencialidad de sus datos de acceso y de
+                informar cualquier situación relacionada con
+                el uso no autorizado de su cuenta.
+            </p>
+
+
+            <h3>4. Información proporcionada</h3>
+
+            <p>
+                Los datos proporcionados durante el registro
+                serán utilizados para administrar la cuenta
+                y proporcionar las funciones disponibles
+                dentro de Mercado Mexa.
+            </p>
+
+
+            <h3>5. Uso responsable</h3>
+
+            <p>
+                El usuario se compromete a utilizar la
+                plataforma de manera responsable y conforme
+                a las disposiciones aplicables.
+            </p>
+
+
+            <h3>6. Cambios en los términos</h3>
+
+            <p>
+                Mercado Mexa podrá actualizar estos términos
+                cuando sea necesario. Los cambios serán
+                comunicados dentro de la plataforma cuando
+                corresponda.
+            </p>
+
+
+            <h3>7. Aceptación</h3>
+
+            <p>
+                Al crear una cuenta, el usuario confirma que
+                ha leído y acepta los presentes términos y
+                condiciones.
+            </p>
+
+        </div>
+
+
+        <!-- ACEPTAR -->
+        <button
+            type="button"
+            class="btn-naranja grande"
+            id="btnAceptarTerminos">
+
+            ACEPTAR Y CONTINUAR
+
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     NOTIFICACIÓN
+========================= -->
+
+<div
+    id="notificacionCuenta"
+    class="notificacion-cuenta">
+
+    <span
+        id="iconoNotificacion">
+        ✓
+    </span>
+
+    <div>
+        <strong id="tituloNotificacion">
+            Operación realizada
+        </strong>
+
+        <p id="mensajeNotificacion">
+            Todo salió correctamente.
+        </p>
+    </div>
+
+</div>
+
 <!-- LEAFLET -->
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 
 <script src="js/script.js"></script>
 
