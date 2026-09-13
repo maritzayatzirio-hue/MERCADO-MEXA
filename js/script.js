@@ -8,11 +8,17 @@ let tiendas = [];
 let tiendasVisibles = 6;
 
 let carrito = JSON.parse(localStorage.getItem("carritoMexa") || "[]");
-carrito = carrito.map(p => ({ ...p, cantidad: p.cantidad || 1 }));
+carrito = carrito.map(p => ({
+    ...p,
+    cantidad: p.cantidad || 1,
+    comprado: Boolean(p.comprado)
+}));
 let favoritosMexa =
     JSON.parse(
         localStorage.getItem("favoritosMexa") || "[]"
     );
+
+let temporizadorLista = null;
 
 const estadoUbicacion = document.getElementById("estadoUbicacion");
 const listaTiendas = document.getElementById("listaTiendas");
@@ -2107,11 +2113,27 @@ actualizarBotonCuenta();
 
 function abrirLista() {
 
-    renderLista();
+    const modal = document.getElementById("modalLista");
+    const contenido = document.getElementById("contenidoLista");
 
-    document
-        .getElementById("modalLista")
-        ?.classList.add("activa");
+    if (!modal || !contenido) return;
+
+    clearTimeout(temporizadorLista);
+
+    contenido.innerHTML = `
+        <div class="cargando-lista" aria-label="Preparando tu lista">
+            <div class="bolsa-cargando">🛒</div>
+            <strong>Preparando tu compra semanal</strong>
+            <span>Organizando tus productos…</span>
+        </div>
+    `;
+
+    modal.classList.add("activa", "preparando-lista");
+
+    temporizadorLista = setTimeout(() => {
+        renderLista();
+        modal.classList.remove("preparando-lista");
+    }, 520);
 }
 
 
@@ -2290,18 +2312,31 @@ function crearMapa(
     );
 
 
-    L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    /*
+     * Base vectorial moderna; los marcadores y rutas de Leaflet se
+     * conservan por encima de esta capa.
+     */
+    if (typeof L.maplibreGL === "function") {
+
+        L.maplibreGL({
+            style: "https://tiles.openfreemap.org/styles/liberty"
+        }).addTo(mapa);
+
+    } else {
+
+        L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
         {
 
             maxZoom: 19,
 
             attribution:
-                "&copy; OpenStreetMap contributors"
+                "Tiles &copy; Esri — Sources: Esri, HERE, Garmin, FAO, NOAA, USGS, &copy; OpenStreetMap contributors"
 
         }
 
-    ).addTo(mapa);
+        ).addTo(mapa);
+    }
 
 
     if (!esDemo) {
@@ -2502,7 +2537,7 @@ const tiendasNetoZona = [
    BUSCAR TIENDAS NETO
 ========================= */
 
-function crearTiendasReales(
+async function crearTiendasReales(
     lat,
     lng
 ) {
@@ -2530,38 +2565,90 @@ function crearTiendasReales(
         "BUSCANDO...";
 
 
-    /*
-     * Copiamos las tiendas de nuestra
-     * base local.
-     */
+    try {
 
-    tiendas =
-        tiendasNetoZona.map(
-            tienda => ({
+        /*
+         * Consulta puntos de interés de OpenStreetMap alrededor del GPS.
+         * Así la búsqueda funciona desde Oaxaca, San Miguel el Grande o
+         * cualquier otra ciudad, sin depender de una lista fija.
+         */
+        const radioMetros = 80000;
+        const consulta = `
+            [out:json][timeout:25];
+            (
+                nwr["name"~"Neto", i](around:${radioMetros},${lat},${lng});
+                nwr["brand"~"Neto", i](around:${radioMetros},${lat},${lng});
+                nwr["operator"~"Neto", i](around:${radioMetros},${lat},${lng});
+            );
+            out center tags;
+        `;
 
-                ...tienda,
+        const respuesta = await fetch(
+            "https://overpass-api.de/api/interpreter",
+            {
+                method: "POST",
+                body: consulta
+            }
+        );
 
-                distancia:
-                    calcularDistancia(
-                        lat,
-                        lng,
-                        tienda.lat,
-                        tienda.lng
-                    )
+        if (!respuesta.ok) {
+            throw new Error(`Servicio de mapas: ${respuesta.status}`);
+        }
 
+        const datos = await respuesta.json();
+
+        tiendas = (datos.elements || [])
+            .map(elemento => {
+
+                const tags = elemento.tags || {};
+                const latitud = elemento.lat ?? elemento.center?.lat;
+                const longitud = elemento.lon ?? elemento.center?.lon;
+
+                if (!Number.isFinite(latitud) || !Number.isFinite(longitud)) {
+                    return null;
+                }
+
+                return {
+                    id: `osm-${elemento.type}-${elemento.id}`,
+                    nombre: tags.name || tags.brand || "Tienda Neto",
+                    ciudad: tags["addr:city"] || tags["addr:town"] || tags["addr:village"] || "",
+                    direccion: construirDireccion(tags, latitud, longitud),
+                    lat: latitud,
+                    lng: longitud,
+                    distancia: calcularDistancia(lat, lng, latitud, longitud)
+                };
             })
-        );
+            .filter(Boolean);
 
 
-    /*
-     * Solo tiendas dentro de 50 km.
-     */
+        /*
+         * Algunas sucursales todavía no están registradas en OpenStreetMap.
+         * En ese caso usamos las sucursales verificadas de respaldo, pero
+         * únicamente si también están cerca de la posición GPS.
+         */
+        if (!tiendas.length) {
 
-    tiendas =
-        tiendas.filter(
-            tienda =>
-                tienda.distancia <= 50
-        );
+            tiendas = tiendasNetoZona
+                .map(tienda => ({
+                    ...tienda,
+                    distancia: calcularDistancia(lat, lng, tienda.lat, tienda.lng)
+                }))
+                .filter(tienda => tienda.distancia <= 80);
+        }
+
+
+    } catch (error) {
+
+        console.warn("No se pudo consultar OpenStreetMap.", error);
+
+        /* Respaldo para demostración sin conexión. */
+        tiendas = tiendasNetoZona
+            .map(tienda => ({
+                ...tienda,
+                distancia: calcularDistancia(lat, lng, tienda.lat, tienda.lng)
+            }))
+            .filter(tienda => tienda.distancia <= 80);
+    }
 
 
     /*
@@ -2609,8 +2696,8 @@ function crearTiendasReales(
                 </strong>
 
                 <p>
-                    No encontramos tiendas
-                    dentro de 50 km.
+                    No encontramos tiendas registradas
+                    dentro de 80 km de tu ubicación.
                 </p>
 
             </div>
@@ -2751,6 +2838,132 @@ function construirDireccion(
 
 }
 
+
+/* =========================
+   LISTA SEMANAL
+========================= */
+
+const ordenCategoriasLista = [
+    "Frutas y verduras",
+    "Abarrotes",
+    "Lácteos y proteína",
+    "Hogar y limpieza",
+    "Otros"
+];
+
+const iconosCategoriasLista = {
+    "Frutas y verduras": "🥬",
+    "Abarrotes": "🥫",
+    "Lácteos y proteína": "🥛",
+    "Hogar y limpieza": "🧼",
+    "Otros": "🛒"
+};
+
+function categoriaDeProducto(producto) {
+
+    if (producto.categoriaLista) return producto.categoriaLista;
+
+    const nombre = String(producto.nombre).toLowerCase();
+
+    if (/manzana|plátano|naranja|mandarina|limón|mango|papaya|jitomate|cebolla|papa|zanahoria|aguacate|lechuga/.test(nombre)) {
+        return "Frutas y verduras";
+    }
+
+    if (/leche|queso|yogurt|huevo|pollo|carne|atún/.test(nombre)) {
+        return "Lácteos y proteína";
+    }
+
+    if (/cloro|limpiador|jabón|esponja|bolsas|papel higiénico|servitoallas|detergente/.test(nombre)) {
+        return "Hogar y limpieza";
+    }
+
+    if (/frijol|arroz|aceite|azúcar|sal|pasta|avena|puré|café|tortilla|pan/.test(nombre)) {
+        return "Abarrotes";
+    }
+
+    return "Otros";
+}
+
+function formatearPrecio(precio) {
+    return `$${Number(precio).toFixed(2)}`;
+}
+
+function renderLista() {
+
+    const cont = document.getElementById("contenidoLista");
+
+    if (!cont) return;
+
+    if (!carrito.length) {
+        cont.innerHTML = `
+            <div class="lista-vacia">
+                <div class="lista-vacia-icono">🛒</div>
+                <strong>Tu lista está lista para empezar</strong>
+                <p>Crea una compra semanal equilibrada o agrega productos desde el catálogo.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const totalProductos = carrito.reduce((suma, producto) => suma + producto.cantidad, 0);
+    const totalPagar = carrito.reduce((suma, producto) => suma + producto.precio * producto.cantidad, 0);
+
+    const grupos = carrito.reduce((resultado, producto, indice) => {
+        const categoria = categoriaDeProducto(producto);
+        (resultado[categoria] ||= []).push({ producto, indice });
+        return resultado;
+    }, {});
+
+    const categorias = ordenCategoriasLista.filter(categoria => grupos[categoria]);
+
+    cont.innerHTML = `
+        <div class="lista-categorias">
+            ${categorias.map(categoria => `
+                <section class="grupo-lista">
+                    <h3>${iconosCategoriasLista[categoria]} ${escapeHTML(categoria)} <small>${grupos[categoria].length}</small></h3>
+                    ${grupos[categoria].map(({ producto, indice }) => `
+                        <article class="item-lista">
+                            <div class="item-lista-info">
+                                <strong>${escapeHTML(producto.nombre)}</strong>
+                                <small>${formatearPrecio(producto.precio)} c/u · ${formatearPrecio(producto.precio * producto.cantidad)}</small>
+                            </div>
+                            <div class="qty" aria-label="Cantidad">
+                                <button type="button" onclick="cambiarCantidad(${indice}, -1)" aria-label="Quitar una unidad">−</button>
+                                <strong>${producto.cantidad}</strong>
+                                <button type="button" onclick="cambiarCantidad(${indice}, 1)" aria-label="Agregar una unidad">+</button>
+                            </div>
+                            <button class="eliminar-lista" type="button" onclick="eliminarDeLista(${indice})" aria-label="Eliminar ${escapeHTML(producto.nombre)}">×</button>
+                        </article>
+                    `).join("")}
+                </section>
+            `).join("")}
+        </div>
+        <div class="total-productos-lista">
+            <div>
+                <span>PRODUCTOS EN TU LISTA</span>
+                <strong>${totalProductos} productos</strong>
+            </div>
+            <div class="total-pagar-lista">
+                <span>TOTAL A PAGAR</span>
+                <strong>${formatearPrecio(totalPagar)}</strong>
+            </div>
+        </div>
+    `;
+}
+
+function alternarProductoLista(indice) {
+    if (!carrito[indice]) return;
+    carrito[indice].comprado = !carrito[indice].comprado;
+    guardar();
+}
+
+function marcarListaCompleta() {
+    const marcar = carrito.some(producto => !producto.comprado);
+    carrito.forEach(producto => {
+        producto.comprado = marcar;
+    });
+    guardar();
+}
 
 /* =========================
    CANTIDAD
@@ -5471,7 +5684,9 @@ function agregarAlCarrito(
 
             precio,
 
-            cantidad: 1
+            cantidad: 1,
+
+            comprado: false
 
         });
 
@@ -5524,7 +5739,7 @@ function actualizarContador() {
    MOSTRAR LISTA
 ========================= */
 
-function renderLista() {
+function renderListaLegacy() {
 
     const cont =
         document.getElementById(
@@ -5724,7 +5939,7 @@ function vaciarLista() {
    LISTA AUTOMÁTICA
 ========================= */
 
-function generarListaAutomatica() {
+function generarListaAutomaticaLegacy() {
 
     carrito = [
 
@@ -5784,6 +5999,40 @@ function generarListaAutomatica() {
 
 }
 
+
+function productoSemanal(nombre, precio, cantidad, categoriaLista) {
+    return { nombre, precio, cantidad, categoriaLista, comprado: false };
+}
+
+function generarListaAutomatica() {
+
+    /* Compra base para una persona durante una semana. */
+    carrito = [
+        productoSemanal("Frijol Negro 900g", 32, 1, "Abarrotes"),
+        productoSemanal("Arroz Morelos 1kg", 35, 1, "Abarrotes"),
+        productoSemanal("Pasta Spaghetti 200g", 17, 1, "Abarrotes"),
+        productoSemanal("Avena 400g", 28, 1, "Abarrotes"),
+        productoSemanal("Atún en Agua 140g", 22, 2, "Lácteos y proteína"),
+        productoSemanal("Aceite Vegetal 1L", 48, 1, "Abarrotes"),
+        productoSemanal("Leche Entera Neto 1L", 26, 2, "Lácteos y proteína"),
+        productoSemanal("Huevo Blanco 18 Piezas", 52, 1, "Lácteos y proteína"),
+        productoSemanal("Queso Oaxaca 400g", 68, 1, "Lácteos y proteína"),
+        productoSemanal("Yogurt Natural 1kg", 38, 1, "Lácteos y proteína"),
+        productoSemanal("Plátano", 28, 1, "Frutas y verduras"),
+        productoSemanal("Manzana Roja", 45, 1, "Frutas y verduras"),
+        productoSemanal("Jitomate Saladet", 34, 1, "Frutas y verduras"),
+        productoSemanal("Cebolla Blanca", 29, 1, "Frutas y verduras"),
+        productoSemanal("Papa Blanca", 31, 1, "Frutas y verduras"),
+        productoSemanal("Zanahoria", 27, 1, "Frutas y verduras"),
+        productoSemanal("Aguacate Hass", 69, 1, "Frutas y verduras"),
+        productoSemanal("Jabón para Trastes 750ml", 32, 1, "Hogar y limpieza"),
+        productoSemanal("Cloro 1L", 24, 1, "Hogar y limpieza"),
+        productoSemanal("Papel Higiénico 4pz", 32, 1, "Hogar y limpieza")
+    ];
+
+    guardar();
+    abrirLista();
+}
 
 /* =========================
    SEGURIDAD HTML
