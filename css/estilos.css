@@ -3590,6 +3590,18 @@ footer > strong {
 
 }
 
+@keyframes corazonLatido {
+    0% {
+        transform: scale(.9) translateY(0);
+    }
+    50% {
+        transform: scale(1.1) translateY(-3px);
+    }
+    100% {
+        transform: scale(.95) translateY(0);
+    }
+}
+
 
 /* =========================
    INFORMACIÓN
@@ -3919,4 +3931,136 @@ footer > strong {
 
     }
 
+}
+
+/* =====================================================
+   ESTILOS MODERNOS DE MI CUENTA Y ROLES
+===================================================== */
+.cuenta-modal {
+    width: min(580px, 95vw);
+}
+
+.cuenta-icon {
+    width: 74px !important;
+    height: 74px !important;
+    margin: 0 auto 16px !important;
+    display: grid !important;
+    place-items: center !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #111820 0%, #24303f 100%) !important;
+    color: white !important;
+    border: 3px solid #ff4b12 !important;
+    box-shadow: 0 10px 24px rgba(17,24,32,.18), 0 0 0 5px rgba(255,75,18,.15) !important;
+    font-size: 32px !important;
+    transition: transform .25s ease !important;
+}
+
+.cuenta-icon:hover {
+    transform: scale(1.05) !important;
+}
+
+.roles-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 18px 0 20px;
+    text-align: left;
+}
+
+@media (max-width: 600px) {
+    .roles-preview-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.rol-preview-card {
+    background: white;
+    border: 1.5px solid #ded9d0;
+    border-radius: 14px;
+    padding: 13px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    transition: all .22s ease;
+    position: relative;
+}
+
+.rol-preview-card:hover {
+    border-color: var(--naranja);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(17,24,32,.08);
+}
+
+.rol-card-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #fff4ed;
+    display: grid;
+    place-items: center;
+    font-size: 19px;
+}
+
+.rol-preview-card strong {
+    font-size: 11px;
+    color: var(--negro);
+    display: block;
+    margin-top: 2px;
+}
+
+.rol-preview-card p {
+    font-size: 9px !important;
+    color: var(--gris) !important;
+    line-height: 1.35 !important;
+    margin: 0 !important;
+    flex: 1;
+}
+
+.rol-pill {
+    align-self: flex-start;
+    margin-top: 6px;
+    padding: 3px 8px;
+    background: #f1eee8;
+    color: var(--negro);
+    font-size: 8px;
+    font-weight: 800;
+    border-radius: 6px;
+    transition: background .2s, color .2s;
+}
+
+.rol-preview-card:hover .rol-pill {
+    background: var(--naranja);
+    color: white;
+}
+
+.acciones-cuenta-inicial {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.demo-roles-box {
+    margin: 12px 0 16px;
+    padding: 12px;
+    background: #fff8f5;
+    border: 1px dashed #ffc7b2;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.btn-demo-rol {
+    padding: 6px 11px;
+    font-size: 10px;
+    border: 1px solid #ffccb8;
+    border-radius: 6px;
+    background: white;
+    font-weight: 800;
+    transition: all .2s ease;
+}
+
+.btn-demo-rol:hover {
+    background: var(--naranja);
+    color: white;
+    border-color: var(--naranja);
 }

@@ -132,11 +132,11 @@ function prepararEventos() {
 
     document
         .getElementById("botonLista")
-        ?.addEventListener("click", abrirLista);
+        ?.addEventListener("click", () => abrirLista(true));
 
     document
         .getElementById("navLista")
-        ?.addEventListener("click", abrirLista);
+        ?.addEventListener("click", () => abrirLista(true));
 
 
     document
@@ -1555,6 +1555,7 @@ function mostrarCuentaPorRol(
             <button
                 type="button"
                 class="opcion-cuenta"
+                id="btnFavoritosCuenta"
             >
                 ❤️ Mis favoritos
             </button>
@@ -1562,6 +1563,7 @@ function mostrarCuentaPorRol(
             <button
                 type="button"
                 class="opcion-cuenta"
+                id="btnMiListaCuenta"
             >
                 🛒 Mi lista
             </button>
@@ -1796,6 +1798,16 @@ function mostrarCuentaPorRol(
 
             }
         );
+
+    document.getElementById("btnFavoritosCuenta")?.addEventListener("click", () => {
+        modalCuenta.classList.remove("activa");
+        abrirFavoritos();
+    });
+
+    document.getElementById("btnMiListaCuenta")?.addEventListener("click", () => {
+        modalCuenta.classList.remove("activa");
+        abrirLista(true);
+    });
 
 
     /* =========================
@@ -2100,6 +2112,10 @@ actualizarBotonCuenta();
 
                 }
 
+                if (target === "favoritos") {
+                    abrirFavoritos();
+                }
+
             });
 
         });
@@ -2111,29 +2127,62 @@ actualizarBotonCuenta();
    LISTA
 ========================= */
 
-function abrirLista() {
+function abrirLista(conAnimacion = true) {
 
     const modal = document.getElementById("modalLista");
-    const contenido = document.getElementById("contenidoLista");
+    if (!modal) return;
 
-    if (!modal || !contenido) return;
+    let cargando = document.getElementById("loadingLista");
+    if (!cargando) {
+        cargando = document.createElement("div");
+        cargando.id = "loadingLista";
+        cargando.className = "ventana-modal";
+        document.body.appendChild(cargando);
 
-    clearTimeout(temporizadorLista);
+        cargando.addEventListener("click", e => {
+            if (e.target === cargando) {
+                if (cargando._timer) clearTimeout(cargando._timer);
+                cargando.classList.remove("activa");
+            }
+        });
+    }
 
-    contenido.innerHTML = `
-        <div class="cargando-lista" aria-label="Preparando tu lista">
-            <div class="bolsa-cargando">🛒</div>
-            <strong>Preparando tu compra semanal</strong>
-            <span>Organizando tus productos…</span>
+    if (cargando._timer) {
+        clearTimeout(cargando._timer);
+    }
+
+    renderLista();
+
+    if (!conAnimacion) {
+        modal.classList.add("activa");
+        return;
+    }
+
+    modal.classList.remove("activa");
+
+    cargando.innerHTML = `
+        <div class="catalogo-loading">
+            <div class="catalogo-loading-icon">
+                🛒
+            </div>
+            <div class="catalogo-loading-titulo">
+                ABRIENDO MI LISTA
+            </div>
+            <div class="catalogo-loading-bar">
+                <div></div>
+            </div>
+            <div class="catalogo-loading-texto">
+                Preparando productos...
+            </div>
         </div>
     `;
 
-    modal.classList.add("activa", "preparando-lista");
+    cargando.classList.add("activa");
 
-    temporizadorLista = setTimeout(() => {
-        renderLista();
-        modal.classList.remove("preparando-lista");
-    }, 520);
+    cargando._timer = setTimeout(() => {
+        cargando.classList.remove("activa");
+        modal.classList.add("activa");
+    }, 1250);
 }
 
 
@@ -4560,6 +4609,268 @@ function toggleFavorito(
         )
     );
 
+    const modalFav = document.getElementById("modalFavoritos");
+    if (modalFav && modalFav.classList.contains("activa")) {
+        renderFavoritos();
+    }
+}
+
+
+/* =====================================================
+   SECCIÓN Y MODAL DE FAVORITOS
+===================================================== */
+
+function obtenerTodosLosProductos() {
+    const categorias = getCategoriasBase();
+    const productos = [];
+    const nombresVistos = new Set();
+
+    categorias.forEach(cat => {
+        (cat.productos || []).forEach(p => {
+            if (!nombresVistos.has(p.nombre)) {
+                nombresVistos.add(p.nombre);
+                productos.push(p);
+            }
+        });
+    });
+
+    return productos;
+}
+
+function abrirFavoritos(conAnimacion = true) {
+    let modal = document.getElementById("modalFavoritos");
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "modalFavoritos";
+        modal.className = "ventana-modal";
+        document.body.appendChild(modal);
+
+        modal.addEventListener("click", e => {
+            if (e.target === modal) {
+                cerrarFavoritos();
+            }
+        });
+    }
+
+    let cargando = document.getElementById("loadingFavoritos");
+    if (!cargando) {
+        cargando = document.createElement("div");
+        cargando.id = "loadingFavoritos";
+        cargando.className = "ventana-modal";
+        document.body.appendChild(cargando);
+
+        cargando.addEventListener("click", e => {
+            if (e.target === cargando) {
+                if (cargando._timer) clearTimeout(cargando._timer);
+                cargando.classList.remove("activa");
+            }
+        });
+    }
+
+    if (cargando._timer) {
+        clearTimeout(cargando._timer);
+    }
+
+    renderFavoritos();
+
+    if (!conAnimacion) {
+        modal.classList.add("activa");
+        return;
+    }
+
+    modal.classList.remove("activa");
+
+    cargando.innerHTML = `
+        <div class="catalogo-loading">
+            <div class="catalogo-loading-icon" style="background:transparent;box-shadow:none;border-radius:0;font-size:72px;filter:drop-shadow(0 6px 14px rgba(255,49,91,.25));animation:corazonLatido .75s infinite alternate ease-in-out;">
+                ❤️
+            </div>
+            <div class="catalogo-loading-titulo">
+                ABRIENDO FAVORITOS
+            </div>
+            <div class="catalogo-loading-bar">
+                <div style="background:#ff315b;"></div>
+            </div>
+            <div class="catalogo-loading-texto">
+                Preparando tus favoritos...
+            </div>
+        </div>
+    `;
+
+    cargando.classList.add("activa");
+
+    cargando._timer = setTimeout(() => {
+        cargando.classList.remove("activa");
+        modal.classList.add("activa");
+    }, 1250);
+}
+
+function cerrarFavoritos() {
+    const modal = document.getElementById("modalFavoritos");
+    if (modal) {
+        modal.classList.remove("activa");
+    }
+}
+
+function renderFavoritos() {
+    const modal = document.getElementById("modalFavoritos");
+    if (!modal) return;
+
+    const favoritosNombres = obtenerFavoritos();
+    const todosLosProductos = obtenerTodosLosProductos();
+    const productosFavoritos = todosLosProductos.filter(p => favoritosNombres.includes(p.nombre));
+
+    if (!productosFavoritos.length) {
+        modal.innerHTML = `
+            <div class="contenido-modal lista-modal" style="text-align:center;">
+                <button class="cerrar-modal" onclick="cerrarFavoritos()" type="button">×</button>
+                <span class="section-label" style="color:#ff315b;">TUS PREFERIDOS</span>
+                <h2 style="margin:8px 0 16px;">❤️ MIS FAVORITOS</h2>
+                <div class="lista-vacia" style="margin-top:10px;">
+                    <div class="lista-vacia-icono" style="background:#ffe8ee;font-size:24px;">❤️</div>
+                    <strong>Aún no tienes productos favoritos</strong>
+                    <p>Explora el catálogo y presiona el corazón en los productos que más te gusten para tenerlos guardados aquí.</p>
+                    <button class="btn-naranja" style="margin-top:16px;min-height:36px;padding:0 20px;" onclick="cerrarFavoritos(); entrarTiendaDemo();" type="button">
+                        🛍️ EXPLORAR CATÁLOGO
+                    </button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    modal.innerHTML = `
+        <div class="contenido-modal catalogo-modal favoritos-modal">
+            <button class="cerrar-modal" onclick="cerrarFavoritos()" type="button">×</button>
+
+            <div class="catalogo-encabezado" style="margin-bottom:14px;">
+                <div class="catalogo-logo" style="background:#ff315b;box-shadow:0 6px 15px rgba(255,49,91,.25);">
+                    ❤️
+                </div>
+                <div>
+                    <span class="section-label" style="color:#ff315b;">TUS PREFERIDOS</span>
+                    <h2>MIS FAVORITOS (${productosFavoritos.length})</h2>
+                    <p class="catalogo-direccion">
+                        Productos guardados para agregarlos rápidamente a tu lista de compra.
+                    </p>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+                <button type="button" class="btn-naranja" style="padding:10px 18px;font-size:10px;font-weight:900;border-radius:8px;" onclick="agregarTodosFavoritos()">
+                    🛒 AGREGAR TODOS A MI LISTA
+                </button>
+                <button type="button" class="btn-outline" style="padding:10px 18px;font-size:10px;font-weight:900;border-radius:8px;" onclick="vaciarFavoritos()">
+                    🗑️ VACIAR FAVORITOS
+                </button>
+            </div>
+
+            <div class="catalogo-productos">
+                ${crearProductosFavoritosHTML(productosFavoritos)}
+            </div>
+        </div>
+    `;
+}
+
+function entrarTiendaDemo() {
+    if (tiendas.length > 0) {
+        entrarTienda(tiendas[0].id);
+    } else {
+        const cat = document.querySelector(".nav-item[data-target='catalogo']");
+        if (cat) cat.click();
+    }
+}
+
+function crearProductosFavoritosHTML(productos) {
+    return productos.map((producto, index) => {
+        return `
+            <div
+                class="producto-catalogo"
+                style="animation-delay: ${index * 40}ms"
+            >
+                <div class="producto-imagen">
+                    <div class="producto-sticker">
+                        ${producto.icono}
+                    </div>
+
+                    <button
+                        type="button"
+                        class="producto-favorito favorito-activo"
+                        onclick="toggleFavorito('${escapeJS(producto.nombre)}', this)"
+                        title="Quitar de favoritos"
+                    >
+                        ♥
+                    </button>
+                </div>
+
+                <div class="producto-info">
+                    <strong class="producto-nombre">
+                        ${escapeHTML(producto.nombre)}
+                    </strong>
+
+                    <span class="producto-presentacion">
+                        ${escapeHTML(producto.presentacion || producto.desc || "")}
+                    </span>
+
+                    <div class="producto-precio">
+                        $${Number(producto.precio).toFixed(2)}
+                    </div>
+
+                    <div class="producto-calificacion">
+                        <span>★★★★★</span>
+                        <small>(${producto.resenas || 120})</small>
+                    </div>
+
+                    <div class="producto-caducidad">
+                        📅 CAD <strong>${escapeHTML(producto.caducidad)}</strong>
+                    </div>
+
+                    <div class="producto-lote">
+                        LOTE: ${escapeHTML(producto.lote)}
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn-naranja producto-agregar"
+                        onclick="agregarProductoCatalogo('${escapeJS(producto.nombre)}', ${Number(producto.precio)})"
+                    >
+                        🛒 AGREGAR
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function agregarTodosFavoritos() {
+    const todos = obtenerTodosLosProductos();
+    const favoritos = obtenerFavoritos();
+    const prods = todos.filter(p => favoritos.includes(p.nombre));
+
+    if (!prods.length) return;
+
+    prods.forEach(p => {
+        const existente = carrito.find(item => item.nombre === p.nombre);
+        if (existente) {
+            existente.cantidad++;
+        } else {
+            carrito.push({
+                nombre: p.nombre,
+                precio: p.precio,
+                cantidad: 1,
+                comprado: false
+            });
+        }
+    });
+
+    guardar();
+    mostrarNotificacionCatalogo("🛒", "¡AGREGADOS A TU LISTA!", `${prods.length} productos fueron agregados a tu lista.`);
+}
+
+function vaciarFavoritos() {
+    localStorage.setItem("favoritosMexa", JSON.stringify([]));
+    renderFavoritos();
+    mostrarNotificacionCatalogo("🗑️", "FAVORITOS VACIADOS", "Se eliminaron todos los productos de favoritos.");
 }
 
 
@@ -5995,7 +6306,7 @@ function generarListaAutomaticaLegacy() {
 
     guardar();
 
-    abrirLista();
+    abrirLista(false);
 
 }
 
@@ -6031,7 +6342,7 @@ function generarListaAutomatica() {
     ];
 
     guardar();
-    abrirLista();
+    abrirLista(false);
 }
 
 /* =========================
