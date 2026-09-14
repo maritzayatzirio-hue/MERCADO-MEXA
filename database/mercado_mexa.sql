@@ -25,10 +25,12 @@ USE mercado_mexa;
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100),
     email VARCHAR(150) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     telefono VARCHAR(20),
     direccion TEXT,
+    rol ENUM('usuario', 'chofer', 'admin') DEFAULT 'usuario',
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     activo TINYINT(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -331,8 +333,8 @@ INSERT INTO tiendas (id, nombre, ciudad, direccion, lat, lng) VALUES
 -- INSERTAR USUARIO DE EJEMPLO
 -- ============================================
 
-INSERT INTO usuarios (nombre, email, password, telefono, direccion) VALUES
-('Alexandra', 'alexandra@ejemplo.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9511234567', 'Tlaxiaco, Oaxaca');
+INSERT INTO usuarios (nombre, apellidos, email, password, telefono, direccion, rol) VALUES
+('Alexandra', 'Hernandez', 'alexandra@ejemplo.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9511234567', 'Tlaxiaco, Oaxaca', 'admin');
 
 
 -- ============================================
