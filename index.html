@@ -626,13 +626,14 @@
         <!-- CERRAR -->
         <button
             class="cerrar-modal"
-            id="cerrarCuenta">
+            id="cerrarCuenta"
+            type="button">
             ×
         </button>
 
         <!-- ICONO -->
         <div class="cuenta-icon">
-            ●
+            👤
         </div>
 
         <span class="section-label">
@@ -643,24 +644,50 @@
             MI CUENTA
         </h2>
 
-        <p>
-            Inicia sesión o crea una cuenta
-            para disfrutar de Mercado Mexa.
+        <p class="modal-subtitulo">
+            Inicia sesión o crea una cuenta para disfrutar de Mercado Mexa y acceder a tu panel.
         </p>
 
-        <!-- INICIAR SESIÓN -->
-        <button
-            class="btn-naranja grande"
-            id="btnAbrirLogin">
-            INICIAR SESIÓN
-        </button>
+        <!-- PREVIEW DE ROLES -->
+        <div class="roles-preview-grid">
+            <div class="rol-preview-card">
+                <div class="rol-card-badge">👤</div>
+                <strong>Cliente / Usuario</strong>
+                <p>Registro público: compras, favoritos y pedidos.</p>
+                <span class="rol-pill">Acceso libre</span>
+            </div>
 
-        <!-- CREAR CUENTA -->
-        <button
-            class="btn-outline grande"
-            id="btnAbrirRegistro">
-            CREAR CUENTA
-        </button>
+            <div class="rol-preview-card">
+                <div class="rol-card-badge">🚚</div>
+                <strong>Chofer / Repartidor</strong>
+                <p>Cuenta privada: creada y asignada por el Administrador.</p>
+                <span class="rol-pill">Personal interno</span>
+            </div>
+
+            <div class="rol-preview-card">
+                <div class="rol-card-badge">⚙️</div>
+                <strong>Administrador</strong>
+                <p>Gestión privada: crea choferes, supervisa pedidos y tiendas.</p>
+                <span class="rol-pill">Acceso privado</span>
+            </div>
+        </div>
+
+        <!-- ACCIONES -->
+        <div class="acciones-cuenta-inicial">
+            <button
+                class="btn-naranja grande"
+                id="btnAbrirLogin"
+                type="button">
+                INICIAR SESIÓN
+            </button>
+
+            <button
+                class="btn-outline grande"
+                id="btnAbrirRegistro"
+                type="button">
+                CREAR CUENTA
+            </button>
+        </div>
 
     </div>
 
@@ -679,12 +706,13 @@
 
         <button
             class="cerrar-modal"
-            id="cerrarLogin">
+            id="cerrarLogin"
+            type="button">
             ×
         </button>
 
         <div class="cuenta-icon">
-            ●
+            🔑
         </div>
 
         <span class="section-label">
@@ -695,73 +723,87 @@
             INICIAR SESIÓN
         </h2>
 
-        <p>
-            Ingresa a tu cuenta para continuar.
+        <p class="modal-subtitulo">
+            Ingresa tus datos o prueba cualquiera de los 3 roles con 1 clic.
         </p>
 
-        <form id="formLogin">
+        <!-- ACCESO RÁPIDO DEMO POR ROL -->
+        <div class="demo-roles-box">
+            <small class="demo-box-titulo">⚡ ACCESO RÁPIDO DE PRUEBA (1 CLIC):</small>
+            <div class="demo-btns-wrap">
+                <button type="button" class="btn-demo-rol" data-demo="usuario" title="Ingresar como Usuario">
+                    👤 Usuario
+                </button>
+                <button type="button" class="btn-demo-rol" data-demo="chofer" title="Ingresar como Chofer">
+                    🚚 Chofer
+                </button>
+                <button type="button" class="btn-demo-rol" data-demo="admin" title="Ingresar como Administrador">
+                    ⚙️ Admin
+                </button>
+            </div>
+        </div>
+
+        <form id="formLogin" class="formulario-cuenta">
 
             <!-- CORREO -->
             <div class="campo-cuenta">
-
                 <label for="loginCorreo">
-                    Correo electrónico
+                    <span>✉️</span> Correo electrónico
                 </label>
-
-                <input
-                    type="email"
-                    id="loginCorreo"
-                    name="correo"
-                    placeholder="correo@ejemplo.com"
-                    autocomplete="email"
-                    required>
-
+                <div class="input-contenedor">
+                    <input
+                        type="email"
+                        id="loginCorreo"
+                        name="correo"
+                        placeholder="ejemplo@correo.com"
+                        autocomplete="email"
+                        required>
+                </div>
             </div>
 
             <!-- CONTRASEÑA -->
             <div class="campo-cuenta">
-
                 <label for="loginPassword">
-                    Contraseña
+                    <span>🔒</span> Contraseña
                 </label>
-
-                <input
-                    type="password"
-                    id="loginPassword"
-                    name="password"
-                    placeholder="Tu contraseña"
-                    autocomplete="current-password"
-                    required>
-
+                <div class="input-contenedor">
+                    <input
+                        type="password"
+                        id="loginPassword"
+                        name="password"
+                        placeholder="Ingresa tu contraseña"
+                        autocomplete="current-password"
+                        required>
+                </div>
             </div>
 
-            <!-- BOTÓN -->
+            <!-- BOTÓN SUBMIT -->
             <button
-    class="btn-naranja grande"
-    id="btnAbrirLogin"
-    type="button">
-    INICIAR SESIÓN
-</button>
+                type="submit"
+                class="btn-naranja grande"
+                id="btnSubmitLogin">
+                INICIAR SESIÓN
+            </button>
 
         </form>
 
         <button
-    class="btn-link-cuenta"
-    id="btnRecuperarPassword"
-    type="button">
-    ¿Olvidaste tu contraseña?
-</button>
+            class="btn-link-cuenta"
+            id="btnRecuperarPassword"
+            type="button">
+            ¿Olvidaste tu contraseña?
+        </button>
 
         <div class="separador-cuenta">
-            <span>¿No tienes cuenta?</span>
+            <span>¿Aún no tienes cuenta?</span>
         </div>
 
         <button
-    class="btn-outline grande"
-    id="btnAbrirRegistro"
-    type="button">
-    CREAR CUENTA
-</button>
+            class="btn-outline grande"
+            id="btnRegistroDesdeLogin"
+            type="button">
+            CREAR CUENTA NUEVA
+        </button>
 
     </div>
 
@@ -776,16 +818,17 @@
     class="ventana-modal"
     id="modalRegistro">
 
-    <div class="contenido-modal cuenta-modal">
+    <div class="contenido-modal cuenta-modal modal-registro-amplio">
 
         <button
             class="cerrar-modal"
-            id="cerrarRegistro">
+            id="cerrarRegistro"
+            type="button">
             ×
         </button>
 
         <div class="cuenta-icon">
-            ●
+            ✨
         </div>
 
         <span class="section-label">
@@ -793,157 +836,151 @@
         </span>
 
         <h2>
-            CREAR CUENTA
+            CREAR CUENTA DE CLIENTE
         </h2>
 
-        <p>
-            Crea tu cuenta para comenzar a utilizar
-            Mercado Mexa.
+        <p class="modal-subtitulo">
+            Regístrate para realizar tus pedidos, guardar favoritos y comprar en Mercado Mexa.
         </p>
 
-        <form id="formRegistro">
+        <form id="formRegistro" class="formulario-cuenta">
 
-            <!-- NOMBRE -->
-            <div class="campo-cuenta">
+            <!-- FILA: NOMBRE Y APELLIDOS -->
+            <div class="grid-campos-2">
+                <div class="campo-cuenta">
+                    <label for="registroNombre">
+                        <span>👤</span> Nombre
+                    </label>
+                    <div class="input-contenedor">
+                        <input
+                            type="text"
+                            id="registroNombre"
+                            name="nombre"
+                            placeholder="Tu nombre"
+                            autocomplete="given-name"
+                            required>
+                    </div>
+                </div>
 
-                <label for="registroNombre">
-                    Nombre
-                </label>
-
-                <input
-                    type="text"
-                    id="registroNombre"
-                    name="nombre"
-                    placeholder="Tu nombre"
-                    autocomplete="given-name"
-                    required>
-
+                <div class="campo-cuenta">
+                    <label for="registroApellidos">
+                        <span>👤</span> Apellidos
+                    </label>
+                    <div class="input-contenedor">
+                        <input
+                            type="text"
+                            id="registroApellidos"
+                            name="apellidos"
+                            placeholder="Tus apellidos"
+                            autocomplete="family-name"
+                            required>
+                    </div>
+                </div>
             </div>
 
-            <!-- APELLIDOS -->
-            <div class="campo-cuenta">
+            <!-- FILA: CORREO Y TELÉFONO -->
+            <div class="grid-campos-2">
+                <div class="campo-cuenta">
+                    <label for="registroCorreo">
+                        <span>✉️</span> Correo electrónico
+                    </label>
+                    <div class="input-contenedor">
+                        <input
+                            type="email"
+                            id="registroCorreo"
+                            name="correo"
+                            placeholder="correo@ejemplo.com"
+                            autocomplete="email"
+                            required>
+                    </div>
+                </div>
 
-                <label for="registroApellidos">
-                    Apellidos
-                </label>
-
-                <input
-                    type="text"
-                    id="registroApellidos"
-                    name="apellidos"
-                    placeholder="Tus apellidos"
-                    autocomplete="family-name"
-                    required>
-
+                <div class="campo-cuenta">
+                    <label for="registroTelefono">
+                        <span>📱</span> Teléfono
+                    </label>
+                    <div class="input-contenedor">
+                        <input
+                            type="tel"
+                            id="registroTelefono"
+                            name="telefono"
+                            placeholder="10 dígitos"
+                            autocomplete="tel"
+                            maxlength="10"
+                            required>
+                    </div>
+                </div>
             </div>
 
-            <!-- CORREO -->
-            <div class="campo-cuenta">
+            <!-- FILA: CONTRASEÑA Y CONFIRMACIÓN -->
+            <div class="grid-campos-2">
+                <div class="campo-cuenta">
+                    <label for="registroPassword">
+                        <span>🔒</span> Contraseña
+                    </label>
+                    <div class="input-contenedor">
+                        <input
+                            type="password"
+                            id="registroPassword"
+                            name="password"
+                            placeholder="Mínimo 6 caracteres"
+                            autocomplete="new-password"
+                            required>
+                    </div>
+                </div>
 
-                <label for="registroCorreo">
-                    Correo electrónico
-                </label>
-
-                <input
-                    type="email"
-                    id="registroCorreo"
-                    name="correo"
-                    placeholder="correo@ejemplo.com"
-                    autocomplete="email"
-                    required>
-
+                <div class="campo-cuenta">
+                    <label for="registroPasswordConfirm">
+                        <span>🔒</span> Confirmar contraseña
+                    </label>
+                    <div class="input-contenedor">
+                        <input
+                            type="password"
+                            id="registroPasswordConfirm"
+                            name="passwordConfirm"
+                            placeholder="Repite tu contraseña"
+                            autocomplete="new-password"
+                            required>
+                    </div>
+                </div>
             </div>
 
-            <!-- TELÉFONO -->
-            <div class="campo-cuenta">
-
-                <label for="registroTelefono">
-                    Teléfono
-                </label>
-
+            <!-- TÉRMINOS -->
+            <div class="terminos-cuenta">
                 <input
-                    type="tel"
-                    id="registroTelefono"
-                    name="telefono"
-                    placeholder="10 dígitos"
-                    autocomplete="tel"
-                    maxlength="10"
+                    type="checkbox"
+                    id="registroTerminos"
                     required>
-
+                <label for="registroTerminos">
+                    Acepto los
+                    <button
+                        type="button"
+                        class="btnVerTerminos"
+                        id="btnVerTerminos">
+                        términos y condiciones
+                    </button>
+                    de Mercado Mexa.
+                </label>
             </div>
 
-            <!-- CONTRASEÑA -->
-            <div class="campo-cuenta">
-
-                <label for="registroPassword">
-                    Contraseña
-                </label>
-
-                <input
-                    type="password"
-                    id="registroPassword"
-                    name="password"
-                    placeholder="Crea una contraseña"
-                    autocomplete="new-password"
-                    required>
-
-            </div>
-
-            <!-- CONFIRMAR CONTRASEÑA -->
-            <div class="campo-cuenta">
-
-                <label for="registroPasswordConfirm">
-                    Confirmar contraseña
-                </label>
-
-                <input
-                    type="password"
-                    id="registroPasswordConfirm"
-                    name="passwordConfirm"
-                    placeholder="Repite tu contraseña"
-                    autocomplete="new-password"
-                    required>
-
-            </div>
-
-           
-<!-- TÉRMINOS -->
-<label class="terminos-cuenta">
-
-    <input
-        type="checkbox"
-        id="registroTerminos"
-        required>
-
-    <span>
-        Acepto los
-        <button
-            type="button"
-            class="btnVerTerminos"
-            id="btnVerTerminos">
-            términos y condiciones
-        </button>
-        de Mercado Mexa.
-    </span>
-
-</label>
-
-            <!-- BOTÓN -->
+            <!-- BOTÓN SUBMIT -->
             <button
                 type="submit"
-                class="btn-naranja grande">
+                class="btn-naranja grande"
+                id="btnSubmitRegistro">
                 CREAR CUENTA
             </button>
 
         </form>
 
         <div class="separador-cuenta">
-            <span>¿Ya tienes una cuenta?</span>
+            <span>¿Ya tienes una cuenta registrada?</span>
         </div>
 
         <button
             class="btn-outline grande"
-            id="btnLoginDesdeRegistro">
+            id="btnLoginDesdeRegistro"
+            type="button">
             INICIAR SESIÓN
         </button>
 
@@ -1100,6 +1137,7 @@
 
 
 <script src="js/script.js"></script>
+<script src="js/roles.js"></script>
 
 </body>
 </html>
