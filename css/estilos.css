@@ -4064,3 +4064,694 @@ footer > strong {
     color: white;
     border-color: var(--naranja);
 }
+
+/* =====================================================
+   FORMULARIOS ORDENADOS Y PULIDOS DE CUENTA
+===================================================== */
+.modal-subtitulo {
+    color: var(--gris);
+    font-size: 12px;
+    line-height: 1.45;
+    margin: -10px 0 18px;
+    text-align: center;
+}
+
+.modal-registro-amplio {
+    width: min(640px, 96vw);
+}
+
+.formulario-cuenta {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    text-align: left;
+    width: 100%;
+}
+
+.grid-campos-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 580px) {
+    .grid-campos-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.campo-cuenta {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    text-align: left;
+}
+
+.campo-cuenta label,
+.label-seccion-rol {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--negro);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-contenedor {
+    position: relative;
+    width: 100%;
+}
+
+.input-contenedor input,
+.campo-cuenta input,
+.campo-cuenta select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid #ded9d0;
+    border-radius: 11px;
+    background: #ffffff;
+    color: #111820;
+    font-size: 13px;
+    font-weight: 500;
+    outline: none;
+    transition: all .2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,.02);
+}
+
+.input-contenedor input:focus,
+.campo-cuenta input:focus,
+.campo-cuenta select:focus {
+    border-color: var(--naranja);
+    box-shadow: 0 0 0 3.5px rgba(255, 75, 18, 0.16);
+    background: #ffffff;
+}
+
+/* =====================================================
+   SELECTOR DE ROLES (CREAR CUENTA)
+===================================================== */
+.campo-rol-wrapper {
+    background: #fdfbf7;
+    border: 1.5px dashed #dfd7cc;
+    border-radius: 14px;
+    padding: 12px;
+}
+
+.roles-selector-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 8px;
+}
+
+@media (max-width: 540px) {
+    .roles-selector-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+.tarjeta-opcion-rol {
+    position: relative;
+    cursor: pointer;
+    border: 2px solid #ded9d0;
+    border-radius: 12px;
+    padding: 12px 8px;
+    background: white;
+    text-align: center;
+    transition: all .22s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.tarjeta-opcion-rol input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    margin: 0;
+    width: 0;
+    height: 0;
+}
+
+.tarjeta-opcion-rol:hover {
+    border-color: #ff9b77;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(17,24,32,.06);
+}
+
+.tarjeta-opcion-rol:has(input:checked) {
+    border-color: var(--naranja);
+    background: #fff8f4;
+    box-shadow: 0 5px 16px rgba(255, 75, 18, 0.16);
+    transform: translateY(-2px);
+}
+
+.opcion-rol-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.opcion-rol-icono {
+    font-size: 26px;
+}
+
+.opcion-rol-info strong {
+    display: block;
+    font-size: 12px;
+    color: var(--negro);
+    font-weight: 800;
+}
+
+.opcion-rol-info small {
+    display: block;
+    font-size: 9px;
+    color: var(--gris);
+    margin-top: 2px;
+}
+
+/* =====================================================
+   TÉRMINOS Y SEPARADORES
+===================================================== */
+.terminos-cuenta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0 4px;
+    font-size: 11px;
+    color: #444;
+    cursor: pointer;
+}
+
+.terminos-cuenta input[type="checkbox"] {
+    width: 19px;
+    height: 19px;
+    accent-color: var(--naranja);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.terminos-cuenta label {
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.btnVerTerminos {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--naranja);
+    font-weight: 800;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: inherit;
+}
+
+.btn-link-cuenta {
+    background: none;
+    border: none;
+    margin: 12px auto 4px;
+    color: var(--naranja);
+    font-weight: 700;
+    font-size: 11px;
+    cursor: pointer;
+    display: block;
+    transition: opacity .2s;
+}
+
+.btn-link-cuenta:hover {
+    opacity: .8;
+    text-decoration: underline;
+}
+
+.separador-cuenta {
+    display: flex;
+    align-items: center;
+    margin: 18px 0 14px;
+    color: #888;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    gap: 12px;
+}
+
+.separador-cuenta::before,
+.separador-cuenta::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #ded9d0;
+}
+
+/* =====================================================
+   PERFIL Y PANELES SEGÚN ROL (SESIÓN INICIADA)
+===================================================== */
+.perfil-usuario-cabecera {
+    background: white;
+    border: 1.5px solid #ded9d0;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 15px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-align: left;
+    box-shadow: 0 4px 14px rgba(17,24,32,.04);
+}
+
+.perfil-avatar-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #111820;
+    color: white;
+    font-size: 26px;
+    font-weight: 900;
+    display: grid;
+    place-items: center;
+    border: 3px solid var(--naranja);
+    flex-shrink: 0;
+}
+
+.perfil-info-datos {
+    flex: 1;
+    min-width: 0;
+}
+
+.perfil-info-datos h3 {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--negro);
+    margin: 0 0 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.perfil-info-datos p {
+    font-size: 11px;
+    color: var(--gris);
+    margin: 0 0 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* BADGES DE ROL */
+.badge-rol-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+}
+
+.badge-rol-usuario {
+    background: #e9f2ff;
+    color: #1263d9;
+    border: 1px solid #c2dcff;
+}
+
+.badge-rol-chofer {
+    background: #fff3e6;
+    color: #e05e00;
+    border: 1px solid #ffd4a8;
+}
+
+.badge-rol-admin {
+    background: #202832;
+    color: #ffaa82;
+    border: 1px solid #3d4a5c;
+}
+
+/* TEST ROL SWITCHER IN DASHBOARD */
+.switcher-roles-prueba {
+    background: #fffdf8;
+    border: 1px dashed #e8ded2;
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.switcher-roles-prueba small {
+    display: block;
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--gris);
+    margin-bottom: 7px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.switcher-pills {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-switch-rol {
+    padding: 5px 12px;
+    font-size: 10px;
+    font-weight: 800;
+    border-radius: 20px;
+    border: 1.5px solid #ded9d0;
+    background: white;
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.btn-switch-rol:hover {
+    border-color: var(--naranja);
+    color: var(--naranja);
+}
+
+.btn-switch-rol.activo {
+    background: var(--naranja);
+    border-color: var(--naranja);
+    color: white;
+}
+
+/* PANEL INTERACTIVO DE ROL */
+.panel-rol-contenedor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 18px;
+    text-align: left;
+}
+
+/* ROL: CHOFER */
+.chofer-estado-tarjeta {
+    background: #fff9f4;
+    border: 1.5px solid #fed7c4;
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.chofer-estado-info strong {
+    display: block;
+    font-size: 12px;
+    color: var(--negro);
+}
+
+.chofer-estado-info small {
+    display: block;
+    font-size: 10px;
+    color: var(--gris);
+    margin-top: 2px;
+}
+
+.btn-toggle-estado-chofer {
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 900;
+    border: 0;
+    cursor: pointer;
+    background: #27ae60;
+    color: white;
+    transition: all .2s;
+}
+
+.btn-toggle-estado-chofer.en-ruta {
+    background: #e67e22;
+}
+
+.pedido-chofer-card {
+    background: white;
+    border: 1.5px solid #ded9d0;
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 4px 10px rgba(0,0,0,.03);
+}
+
+.pedido-chofer-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f0ebe2;
+}
+
+.pedido-chofer-head strong {
+    font-size: 12px;
+    color: var(--negro);
+}
+
+.pedido-chofer-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 800;
+    background: #fff0e5;
+    color: var(--naranja);
+}
+
+.pedido-chofer-datos {
+    font-size: 11px;
+    color: #444;
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.pedido-chofer-datos p {
+    margin: 3px 0;
+}
+
+.pedido-chofer-datos strong {
+    color: var(--negro);
+}
+
+.btn-completar-entrega {
+    width: 100%;
+    padding: 10px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 900;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background .2s;
+}
+
+.btn-completar-entrega:hover {
+    background: #219653;
+}
+
+/* ROL: ADMIN */
+.admin-metricas-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.admin-metrica-card {
+    background: white;
+    border: 1.5px solid #ded9d0;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+}
+
+.admin-metrica-card span {
+    font-size: 20px;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.admin-metrica-card strong {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--negro);
+    display: block;
+}
+
+.admin-metrica-card small {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--gris);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.admin-usuarios-lista {
+    background: white;
+    border: 1.5px solid #ded9d0;
+    border-radius: 14px;
+    padding: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.admin-user-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 6px;
+    border-bottom: 1px solid #f2eee8;
+    font-size: 11px;
+}
+
+.admin-user-item:last-child {
+    border-bottom: none;
+}
+
+.admin-user-info strong {
+    display: block;
+    color: var(--negro);
+}
+
+.admin-user-info small {
+    color: var(--gris);
+    font-size: 9px;
+}
+
+/* ROL: USUARIO */
+.usuario-accesos-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.usuario-acceso-btn {
+    background: white;
+    border: 1.5px solid #ded9d0;
+    border-radius: 12px;
+    padding: 12px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--negro);
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.usuario-acceso-btn:hover {
+    border-color: var(--naranja);
+    color: var(--naranja);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,.04);
+}
+
+.btn-cerrar-sesion-mexa {
+    width: 100%;
+    margin-top: 10px;
+    padding: 13px;
+    background: #fbeee9;
+    color: #d9381e;
+    border: 1.5px solid #f5cfc4;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.btn-cerrar-sesion-mexa:hover {
+    background: #d9381e;
+    color: white;
+    border-color: #d9381e;
+}
+
+/* =====================================================
+   PANEL ADMIN: CREACIÓN PRIVADA DE CHOFERES
+===================================================== */
+.admin-crear-chofer-card {
+    background: #fffdf9;
+    border: 1.5px solid #ffccb3;
+    border-radius: 14px;
+    padding: 16px;
+    margin: 12px 0;
+    box-shadow: 0 4px 12px rgba(255, 75, 18, 0.05);
+}
+
+.admin-crear-chofer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.admin-crear-chofer-header strong {
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--negro);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.admin-badge-privado {
+    font-size: 9px;
+    font-weight: 800;
+    color: #c0392b;
+    background: #fde8e4;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+.form-crear-chofer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-crear-chofer .grid-campos-2 {
+    gap: 8px;
+}
+
+.form-crear-chofer input {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 11px;
+    border: 1.5px solid #ded9d0;
+    border-radius: 8px;
+    background: white;
+}
+
+.form-crear-chofer input:focus {
+    border-color: var(--naranja);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 75, 18, 0.15);
+}
+
+.btn-crear-chofer-submit {
+    width: 100%;
+    padding: 11px;
+    background: linear-gradient(135deg, var(--naranja) 0%, #e03903 100%);
+    color: white;
+    font-size: 11px;
+    font-weight: 900;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all .2s;
+    box-shadow: 0 4px 12px rgba(255, 75, 18, 0.25);
+    margin-top: 4px;
+}
+
+.btn-crear-chofer-submit:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
