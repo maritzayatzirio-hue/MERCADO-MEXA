@@ -25,11 +25,16 @@ USE mercado_mexa;
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100),
     email VARCHAR(150) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     telefono VARCHAR(20),
     direccion TEXT,
+<<<<<<< HEAD
     rol ENUM('usuario', 'chofer', 'admin') DEFAULT 'usuario' NOT NULL,
+=======
+    rol ENUM('usuario', 'chofer', 'admin') DEFAULT 'usuario',
+>>>>>>> 7bc17bd4d2a1cf42c82c027c06a36971f12590eb
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     activo TINYINT(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -332,10 +337,15 @@ INSERT INTO tiendas (id, nombre, ciudad, direccion, lat, lng) VALUES
 -- INSERTAR USUARIO DE EJEMPLO
 -- ============================================
 
+<<<<<<< HEAD
 INSERT INTO usuarios (nombre, email, password, telefono, direccion, rol) VALUES
 ('Alexandra Gómez', 'usuario@mexamexa.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9511234567', 'Tlaxiaco, Oaxaca', 'usuario'),
 ('Carlos Ramírez', 'chofer@mexamexa.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9512345678', 'Tlaxiaco, Oaxaca', 'chofer'),
 ('Admin Mercado Mexa', 'admin@mexamexa.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9513456789', 'Oficinas Mercado Mexa', 'admin');
+=======
+INSERT INTO usuarios (nombre, apellidos, email, password, telefono, direccion, rol) VALUES
+('Alexandra', 'Hernandez', 'alexandra@ejemplo.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9511234567', 'Tlaxiaco, Oaxaca', 'admin');
+>>>>>>> 7bc17bd4d2a1cf42c82c027c06a36971f12590eb
 
 
 -- ============================================
