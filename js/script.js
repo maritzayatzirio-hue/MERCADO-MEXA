@@ -2351,9 +2351,9 @@ function crearMapa(
 
     mapa = L.map("mapa", {
 
-        zoomControl: true,
+        zoomControl: false,
 
-        attributionControl: true
+        attributionControl: false
 
     }).setView(
         [lat, lng],
@@ -2365,7 +2365,15 @@ function crearMapa(
      * Base vectorial moderna; los marcadores y rutas de Leaflet se
      * conservan por encima de esta capa.
      */
-    if (typeof L.maplibreGL === "function") {
+    window.mapa = mapa;
+    window.ubicacionUsuario = ubicacionUsuario || { lat, lng };
+    window.crearTiendasReales = crearTiendasReales;
+    window.obtenerUbicacion = obtenerUbicacion;
+
+    if (window.GoogleMapsMexa && typeof window.GoogleMapsMexa.inicializarCapas === "function") {
+        window.GoogleMapsMexa.inicializarCapas(mapa);
+        window.GoogleMapsMexa.configurarEventos();
+    } else if (typeof L.maplibreGL === "function") {
 
         L.maplibreGL({
             style: "https://tiles.openfreemap.org/styles/liberty"
@@ -2728,6 +2736,8 @@ async function crearTiendasReales(
 
         }
     );
+
+    window.tiendas = tiendas;
 
 
     /*
