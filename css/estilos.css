@@ -2048,80 +2048,408 @@ footer > strong {
     font-size: 8px;
 }
 
+.lista-modal {
+    width: min(760px, 95vw);
+    max-height: 90vh;
+}
+
 .item-lista {
-    min-height: 57px;
-    margin-bottom: 6px;
-    padding: 9px 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    margin-bottom: 9px;
+    border: 1.5px solid #e7ded4;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+    transition: opacity .2s, background .2s, border-color .2s;
+}
+
+
+
+.item-lista-icono {
+    flex: 0 0 32px;
+    font-size: 26px;
+    display: grid;
+    place-items: center;
+    margin-top: 1px;
+}
+
+.item-lista-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.item-lista-header {
+    display: flex;
+    align-items: center;
     gap: 8px;
-    border-color: #e7e0d8;
-    border-radius: 12px;
-    transition: opacity .2s, background .2s;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
 }
 
-.item-lista.comprado {
-    background: #f7f7f4;
-    opacity: .65;
+.item-lista-nombre {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: -0.2px;
 }
 
-.item-lista.comprado .item-lista-info strong {
-    text-decoration: line-through;
+.badge-oferta {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: #ffe4e6;
+    color: #be123c;
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 6px;
+    border: 1px solid #fda4af;
+    letter-spacing: 0.3px;
 }
 
-.item-lista-info strong {
-    display: block;
-    margin-bottom: 3px;
+.item-lista-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+}
+
+.badge-caducidad {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    border: 1px solid #bae6fd;
+}
+
+.badge-caducidad strong {
+    font-weight: 700;
+    color: #0c4a6e;
+}
+
+.badge-presentacion {
+    font-size: 9.5px;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 5px;
+}
+
+.item-lista-precios {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
     font-size: 11px;
+    margin-bottom: 6px;
 }
 
-.item-lista-info small {
-    font-size: 9px;
+.precio-tachado {
+    text-decoration: line-through;
+    color: #94a3b8;
+    font-size: 10.5px;
+    font-weight: 500;
 }
 
-.check-lista {
-    flex: 0 0 20px;
-    width: 20px;
-    height: 20px;
-    border: 1.5px solid #bbb4ab;
-    border-radius: 7px;
-    background: white;
+.precio-actual {
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 12.5px;
+}
+
+.precio-tienda-elegida {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: #eff6ff;
+    color: #0369a1;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 2px 7px;
+    font-size: 10px;
+}
+
+.precio-tienda-elegida strong {
+    color: #1e40af;
+}
+
+.precio-subtotal {
+    color: #64748b;
+    font-size: 10.5px;
+}
+
+.precio-subtotal strong {
+    color: #1e293b;
+}
+
+.comparativa-tiendas-contenedor {
+    background: #fbf9f6;
+    border: 1px solid #e7ded2;
+    border-radius: 9px;
+    padding: 6px 9px;
+    margin-top: 5px;
+}
+
+.comparativa-instruccion {
+    font-size: 9.5px;
+    color: #57534e;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.comparativa-resumen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.tienda-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    line-height: 1.25;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid transparent;
+    transition: all .15s ease;
+}
+
+.tienda-tag:hover {
+    filter: brightness(0.96);
+    transform: translateY(-1px);
+}
+
+.tienda-tag.tag-activo {
+    outline: 2px solid #0284c7;
+    outline-offset: 1px;
+}
+
+.tag-check {
+    background: #0284c7;
     color: white;
-    font-size: 12px;
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    display: inline-grid;
+    place-items: center;
+    font-size: 9px;
     font-weight: 900;
+    margin-left: 2px;
 }
 
-.comprado .check-lista {
-    border-color: #1aa86f;
-    background: #1aa86f;
+.tag-accion {
+    background: rgba(0, 0, 0, 0.07);
+    color: inherit;
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: 700;
+    margin-left: 3px;
+    text-transform: uppercase;
+}
+
+.tag-precio {
+    font-weight: 800;
+}
+
+.tienda-barata {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.tienda-cara {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.comparativa-desglose {
+    margin-top: 5px;
+    border-top: 1px dashed #e2d7c9;
+    padding-top: 4px;
+}
+
+.comparativa-desglose summary {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #78716c;
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+}
+
+.comparativa-desglose summary:hover {
+    color: var(--naranja);
+}
+
+.comparativa-lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 5px;
+    margin-top: 6px;
+}
+
+.comparativa-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    border: 1.5px solid #e7e5e4;
+    border-radius: 8px;
+    padding: 5px 8px;
+    font-size: 9.5px;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: all .15s ease;
+}
+
+.comparativa-fila:hover {
+    border-color: var(--naranja);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.comparativa-fila.fila-seleccionada {
+    border-color: #0284c7;
+    background: #f0f9ff;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.22);
+}
+
+.comparativa-fila.fila-barata {
+    border-color: #86efac;
+    background: #f0fdf4;
+    font-weight: 600;
+}
+
+.comparativa-fila.fila-barata.fila-seleccionada {
+    border-color: #059669;
+    background: #ecfdf5;
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25);
+}
+
+.comparativa-fila.fila-cara {
+    border-color: #fca5a5;
+    background: #fef2f2;
+}
+
+.comparativa-fila.fila-cara.fila-seleccionada {
+    border-color: #dc2626;
+    background: #fef2f2;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.25);
+}
+
+.precio-tienda {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+
+.tag-seleccionada {
+    background: #0284c7;
+    color: white;
+    font-size: 8px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-weight: 700;
+    white-space: nowrap;
+    margin-left: 3px;
+}
+
+.tag-mejor {
+    background: #16a34a;
+    color: white;
+    font-size: 8px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 700;
+    margin-left: 2px;
+    white-space: nowrap;
+}
+
+.tag-caro {
+    background: #dc2626;
+    color: white;
+    font-size: 8px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 700;
+    margin-left: 2px;
+    white-space: nowrap;
+}
+
+.tag-elegir {
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 8px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 700;
+    margin-left: 2px;
+    white-space: nowrap;
+}
+
+.item-lista-acciones {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
 }
 
 .qty {
+    display: flex;
+    align-items: center;
     gap: 3px;
 }
 
 .qty button {
-    width: 24px;
-    height: 24px;
-    border-color: #ddd6cd;
+    width: 25px;
+    height: 25px;
+    border: 1px solid #d4ccc2;
     border-radius: 7px;
+    background: white;
     font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.qty button:hover {
+    background: #f5f2eb;
 }
 
 .qty strong {
-    min-width: 14px;
+    min-width: 16px;
     text-align: center;
-    font-size: 10px;
+    font-size: 11px;
 }
 
 .eliminar-lista {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: 0;
     border-radius: 50%;
     background: transparent;
     color: #a6a09a;
-    font-size: 17px;
+    font-size: 18px;
     line-height: 1;
+    cursor: pointer;
+    transition: all .15s;
 }
 
 .eliminar-lista:hover {
@@ -2129,13 +2457,65 @@ footer > strong {
     color: var(--naranja);
 }
 
+.resumen-ahorro-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ecfdf5;
+    border: 1.5px dashed #10b981;
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    text-align: left;
+}
+
+.resumen-ahorro-banner .icono-ahorro {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.resumen-ahorro-banner .texto-ahorro strong {
+    display: block;
+    color: #047857;
+    font-size: 11.5px;
+    margin-bottom: 2px;
+}
+
+.resumen-ahorro-banner .texto-ahorro p {
+    margin: 0;
+    font-size: 10.5px;
+    color: #065f46;
+    line-height: 1.4;
+}
+
+.totales-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
 @media (max-width: 520px) {
-    .acciones-lista {
+    .lista-modal {
+        padding: 18px 12px;
+    }
+
+    .item-lista {
+        padding: 10px 8px;
+        gap: 6px;
+    }
+
+    .item-lista-icono {
+        font-size: 20px;
+        flex: 0 0 24px;
+    }
+
+    .comparativa-lista {
         grid-template-columns: 1fr;
     }
 
-    .lista-resumen b {
-        font-size: 15px;
+    .acciones-lista {
+        grid-template-columns: 1fr;
     }
 }
 
