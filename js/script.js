@@ -2906,6 +2906,7 @@ const ordenCategoriasLista = [
     "Frutas y verduras",
     "Abarrotes",
     "Lácteos y proteína",
+    "Pan y tortillas",
     "Hogar y limpieza",
     "Otros"
 ];
@@ -2914,43 +2915,77 @@ const iconosCategoriasLista = {
     "Frutas y verduras": "🥬",
     "Abarrotes": "🥫",
     "Lácteos y proteína": "🥛",
+    "Pan y tortillas": "🍞",
     "Hogar y limpieza": "🧼",
     "Otros": "🛒"
 };
 
 function categoriaDeProducto(producto) {
-
     if (producto.categoriaLista) return producto.categoriaLista;
-
-    const nombre = String(producto.nombre).toLowerCase();
+    const nombre = String(producto.nombre || "").toLowerCase();
 
     if (/manzana|plátano|naranja|mandarina|limón|mango|papaya|jitomate|cebolla|papa|zanahoria|aguacate|lechuga/.test(nombre)) {
         return "Frutas y verduras";
     }
-
     if (/leche|queso|yogurt|huevo|pollo|carne|atún/.test(nombre)) {
         return "Lácteos y proteína";
     }
-
+    if (/pan|tortilla|bolillo|tostadas|conchas|roles|galletas/.test(nombre)) {
+        return "Pan y tortillas";
+    }
     if (/cloro|limpiador|jabón|esponja|bolsas|papel higiénico|servitoallas|detergente/.test(nombre)) {
         return "Hogar y limpieza";
     }
-
-    if (/frijol|arroz|aceite|azúcar|sal|pasta|avena|puré|café|tortilla|pan/.test(nombre)) {
+    if (/frijol|arroz|aceite|azúcar|sal|pasta|avena|puré|café|mayonesa|salsa/.test(nombre)) {
         return "Abarrotes";
     }
-
     return "Otros";
 }
+
+function generarComparativaTiendas(precioBase, nombre = "") {
+    const tiendasNombres = [
+        "Neto Tlaxiaco Centro",
+        "Tiendas Neto Espíndola",
+        "Tienda Neto Juárez",
+        "Bodega Aurrera"
+    ];
+
+    const hash = String(nombre).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const f1 = Number((0.92 + ((hash % 5) * 0.02)).toFixed(2));
+    const f2 = Number((0.98 + (((hash * 3) % 4) * 0.02)).toFixed(2));
+    const f3 = Number((1.02 + (((hash * 7) % 5) * 0.02)).toFixed(2));
+    const f4 = Number((1.14 + (((hash * 11) % 6) * 0.02)).toFixed(2));
+
+    const p1 = Math.round(precioBase * f1 * 10) / 10;
+    const p2 = Math.round(precioBase * f2 * 10) / 10;
+    const p3 = Math.round(precioBase * f3 * 10) / 10;
+    const p4 = Math.round(precioBase * f4 * 10) / 10;
+
+    const lista = [
+        { tienda: tiendasNombres[0], precio: p1 },
+        { tienda: tiendasNombres[1], precio: p2 },
+        { tienda: tiendasNombres[2], precio: p3 },
+        { tienda: tiendasNombres[3], precio: p4 }
+    ];
+
+    const min = Math.min(...lista.map(item => item.precio));
+    const max = Math.max(...lista.map(item => item.precio));
+
+    return lista.map(item => ({
+        ...item,
+        masBarato: item.precio === min,
+        masCaro: item.precio === max
+    }));
+}
+
+let detallesTiendaAbiertos = {};
 
 function formatearPrecio(precio) {
     return `$${Number(precio).toFixed(2)}`;
 }
 
 function renderLista() {
-
     const cont = document.getElementById("contenidoLista");
-
     if (!cont) return;
 
     if (!carrito.length) {
@@ -2958,14 +2993,21 @@ function renderLista() {
             <div class="lista-vacia">
                 <div class="lista-vacia-icono">🛒</div>
                 <strong>Tu lista está lista para empezar</strong>
-                <p>Crea una compra semanal equilibrada o agrega productos desde el catálogo.</p>
+                <p>Presiona el botón <strong>✨ LISTA SEMANAL</strong> para generar tu despensa automática con comparativa de precios, o agrega productos desde el catálogo.</p>
             </div>
         `;
         return;
     }
 
-    const totalProductos = carrito.reduce((suma, producto) => suma + producto.cantidad, 0);
-    const totalPagar = carrito.reduce((suma, producto) => suma + producto.precio * producto.cantidad, 0);
+    const totalProductos = carrito.reduce((suma, producto) => suma + (producto.cantidad || 1), 0);
+    const totalPagar = carrito.reduce((suma, producto) => suma + (producto.precio * (producto.cantidad || 1)), 0);
+
+    const ahorroTotal = carrito.reduce((suma, p) => {
+        const comp = p.comparativaTiendas || generarComparativaTiendas(p.precio, p.nombre);
+        const max = Math.max(...comp.map(t => t.precio));
+        const min = Math.min(...comp.map(t => t.precio));
+        return suma + Math.max(0, (max - min) * (p.cantidad || 1));
+    }, 0);
 
     const grupos = carrito.reduce((resultado, producto, indice) => {
         const categoria = categoriaDeProducto(producto);
@@ -2979,35 +3021,152 @@ function renderLista() {
         <div class="lista-categorias">
             ${categorias.map(categoria => `
                 <section class="grupo-lista">
-                    <h3>${iconosCategoriasLista[categoria]} ${escapeHTML(categoria)} <small>${grupos[categoria].length}</small></h3>
-                    ${grupos[categoria].map(({ producto, indice }) => `
+                    <h3>${iconosCategoriasLista[categoria] || '🛒'} ${escapeHTML(categoria)} <small>${grupos[categoria].length} productos</small></h3>
+                    ${grupos[categoria].map(({ producto, indice }) => {
+                        const comp = producto.comparativaTiendas || generarComparativaTiendas(producto.precio, producto.nombre);
+                        const tiendaBarata = comp.find(t => t.masBarato) || comp[0];
+                        const tiendaCara = comp.find(t => t.masCaro) || comp[comp.length - 1];
+                        const tiendaActual = producto.tiendaSeleccionada || (tiendaBarata ? tiendaBarata.tienda : comp[0].tienda);
+
+                        return `
                         <article class="item-lista">
+                            <div class="item-lista-icono">
+                                ${producto.icono || '🛒'}
+                            </div>
+
                             <div class="item-lista-info">
-                                <strong>${escapeHTML(producto.nombre)}</strong>
-                                <small>${formatearPrecio(producto.precio)} c/u · ${formatearPrecio(producto.precio * producto.cantidad)}</small>
+                                <div class="item-lista-header">
+                                    <strong class="item-lista-nombre">${escapeHTML(producto.nombre)}</strong>
+                                    ${producto.enOferta ? `
+                                        <span class="badge-oferta">
+                                            🔥 ${escapeHTML(producto.etiquetaOferta || '¡OFERTA!')}
+                                        </span>
+                                    ` : ''}
+                                </div>
+
+                                <div class="item-lista-meta">
+                                    ${producto.caducidad ? `
+                                        <span class="badge-caducidad" title="Fecha de caducidad">
+                                            📅 Cad: <strong>${escapeHTML(producto.caducidad)}</strong>
+                                        </span>
+                                    ` : ''}
+                                    ${producto.presentacion ? `
+                                        <span class="badge-presentacion">${escapeHTML(producto.presentacion)}</span>
+                                    ` : ''}
+                                </div>
+
+                                <div class="item-lista-precios">
+                                    ${producto.enOferta && producto.precioRegular ? `
+                                        <span class="precio-tachado">${formatearPrecio(producto.precioRegular)}</span>
+                                    ` : ''}
+                                    <span class="precio-actual">${formatearPrecio(producto.precio)} c/u</span>
+                                    <span class="precio-tienda-elegida" title="Tienda seleccionada para este producto">
+                                        🏪 Tienda: <strong>${escapeHTML(tiendaActual)}</strong>
+                                    </span>
+                                    <span class="precio-subtotal">· Total: <strong>${formatearPrecio(producto.precio * (producto.cantidad || 1))}</strong></span>
+                                </div>
+
+                                <div class="comparativa-tiendas-contenedor">
+                                    <div class="comparativa-instruccion">
+                                        👆 <em>Selecciona la tienda donde deseas comprar este producto:</em>
+                                    </div>
+
+                                    <div class="comparativa-resumen">
+                                        <button type="button" 
+                                            class="tienda-tag tienda-barata ${tiendaActual === tiendaBarata.tienda ? 'tag-activo' : ''}"
+                                            onclick="seleccionarTiendaProducto(${indice}, '${escapeJS(tiendaBarata.tienda)}', ${tiendaBarata.precio})"
+                                            title="Elegir tienda más barata: ${escapeHTML(tiendaBarata.tienda)} ($${tiendaBarata.precio.toFixed(2)})">
+                                            🟢 <strong>Más barato:</strong> ${escapeHTML(tiendaBarata.tienda)} <b class="tag-precio">${formatearPrecio(tiendaBarata.precio)}</b>
+                                            ${tiendaActual === tiendaBarata.tienda ? '<span class="tag-check" title="Tienda elegida">✓</span>' : '<span class="tag-accion">Elegir</span>'}
+                                        </button>
+
+                                        <button type="button" 
+                                            class="tienda-tag tienda-cara ${tiendaActual === tiendaCara.tienda ? 'tag-activo' : ''}"
+                                            onclick="seleccionarTiendaProducto(${indice}, '${escapeJS(tiendaCara.tienda)}', ${tiendaCara.precio})"
+                                            title="Elegir ${escapeHTML(tiendaCara.tienda)} ($${tiendaCara.precio.toFixed(2)})">
+                                            🔴 <strong>Más caro:</strong> ${escapeHTML(tiendaCara.tienda)} <b class="tag-precio">${formatearPrecio(tiendaCara.precio)}</b>
+                                            ${tiendaActual === tiendaCara.tienda ? '<span class="tag-check" title="Tienda elegida">✓</span>' : '<span class="tag-accion">Elegir</span>'}
+                                        </button>
+                                    </div>
+                                    
+                                    <details class="comparativa-desglose" ${detallesTiendaAbiertos[indice] ? 'open' : ''} ontoggle="detallesTiendaAbiertos[${indice}] = this.open">
+                                        <summary>🔍 Comparar y elegir tienda (${comp.length} opciones)</summary>
+                                        <div class="comparativa-lista">
+                                            ${comp.map(t => {
+                                                const esSeleccionada = (t.tienda === tiendaActual);
+                                                return `
+                                                <button type="button" 
+                                                    class="comparativa-fila ${esSeleccionada ? 'fila-seleccionada' : ''} ${t.masBarato ? 'fila-barata' : (t.masCaro ? 'fila-cara' : '')}"
+                                                    onclick="seleccionarTiendaProducto(${indice}, '${escapeJS(t.tienda)}', ${t.precio})"
+                                                    title="Seleccionar ${escapeHTML(t.tienda)} por ${formatearPrecio(t.precio)}"
+                                                >
+                                                    <span class="nombre-tienda">
+                                                        ${esSeleccionada ? '✓ ' : ''}${t.masBarato ? '🟢 ' : (t.masCaro ? '🔴 ' : '🏪 ')}${escapeHTML(t.tienda)}
+                                                    </span>
+                                                    <span class="precio-tienda">
+                                                        <strong>${formatearPrecio(t.precio)}</strong>
+                                                        ${esSeleccionada ? '<span class="tag-seleccionada">Elegida ✓</span>' : (t.masBarato ? '<small class="tag-mejor">Mejor precio</small>' : (t.masCaro ? '<small class="tag-caro">Más caro</small>' : '<small class="tag-elegir">Elegir</small>'))}
+                                                    </span>
+                                                </button>
+                                                `;
+                                            }).join("")}
+                                        </div>
+                                    </details>
+                                </div>
                             </div>
-                            <div class="qty" aria-label="Cantidad">
-                                <button type="button" onclick="cambiarCantidad(${indice}, -1)" aria-label="Quitar una unidad">−</button>
-                                <strong>${producto.cantidad}</strong>
-                                <button type="button" onclick="cambiarCantidad(${indice}, 1)" aria-label="Agregar una unidad">+</button>
+
+                            <div class="item-lista-acciones">
+                                <div class="qty" aria-label="Cantidad">
+                                    <button type="button" onclick="cambiarCantidad(${indice}, -1)" aria-label="Quitar una unidad">−</button>
+                                    <strong>${producto.cantidad || 1}</strong>
+                                    <button type="button" onclick="cambiarCantidad(${indice}, 1)" aria-label="Agregar una unidad">+</button>
+                                </div>
+                                <button class="eliminar-lista" type="button" onclick="eliminarDeLista(${indice})" aria-label="Eliminar ${escapeHTML(producto.nombre)}">×</button>
                             </div>
-                            <button class="eliminar-lista" type="button" onclick="eliminarDeLista(${indice})" aria-label="Eliminar ${escapeHTML(producto.nombre)}">×</button>
                         </article>
-                    `).join("")}
+                        `;
+                    }).join("")}
                 </section>
             `).join("")}
         </div>
+
         <div class="total-productos-lista">
-            <div>
-                <span>PRODUCTOS EN TU LISTA</span>
-                <strong>${totalProductos} productos</strong>
-            </div>
-            <div class="total-pagar-lista">
-                <span>TOTAL A PAGAR</span>
-                <strong>${formatearPrecio(totalPagar)}</strong>
+            ${ahorroTotal > 0 ? `
+                <div class="resumen-ahorro-banner">
+                    <div class="icono-ahorro">💡</div>
+                    <div class="texto-ahorro">
+                        <strong>Comparativa Inteligente de Despensa</strong>
+                        <p>Comprando en las tiendas más económicas ahorras aproximadamente <strong>${formatearPrecio(ahorroTotal)}</strong> frente a las opciones más caras.</p>
+                    </div>
+                </div>
+            ` : ''}
+            <div class="totales-grid">
+                <div>
+                    <span>PRODUCTOS EN TU LISTA</span>
+                    <strong>${totalProductos} piezas (${carrito.length} artículos)</strong>
+                </div>
+                <div class="total-pagar-lista">
+                    <span>TOTAL ESTIMADO</span>
+                    <strong>${formatearPrecio(totalPagar)}</strong>
+                </div>
             </div>
         </div>
     `;
+}
+
+function seleccionarTiendaProducto(indice, nombreTienda, precioTienda) {
+    if (!carrito[indice]) return;
+
+    carrito[indice].tiendaSeleccionada = nombreTienda;
+    carrito[indice].precio = Number(precioTienda);
+
+    if (carrito[indice].comparativaTiendas) {
+        carrito[indice].comparativaTiendas.forEach(t => {
+            t.seleccionada = (t.tienda === nombreTienda);
+        });
+    }
+
+    guardar();
 }
 
 function alternarProductoLista(indice) {
@@ -5980,42 +6139,54 @@ function getCategoriasBase() {
    CARRITO
 ========================= */
 
+function buscarProductoEnCatalogo(nombre) {
+    try {
+        const cats = getCategoriasBase();
+        for (const cat of cats) {
+            const prod = (cat.productos || []).find(p => p.nombre === nombre);
+            if (prod) return { ...prod, categoriaLista: cat.nombre };
+        }
+    } catch (e) {}
+    return null;
+}
+
 function agregarAlCarrito(
     nombre,
-    precio
+    precio,
+    extraData = {}
 ) {
-
-    const existente =
-        carrito.find(
-            p =>
-                p.nombre ===
-                nombre
-        );
-
+    const existente = carrito.find(p => p.nombre === nombre);
 
     if (existente) {
-
-        existente.cantidad++;
-
+        existente.cantidad = (existente.cantidad || 1) + 1;
     } else {
+        const infoCatalogo = buscarProductoEnCatalogo(nombre) || {};
+        const caducidad = extraData.caducidad || infoCatalogo.caducidad || "Consumo habitual";
+        const icono = extraData.icono || infoCatalogo.icono || "🛒";
+        const presentacion = extraData.presentacion || infoCatalogo.presentacion || "";
+        const categoriaLista = extraData.categoriaLista || infoCatalogo.categoriaLista || categoriaDeProducto({ nombre });
+        const enOferta = Boolean(extraData.enOferta);
+        const etiquetaOferta = extraData.etiquetaOferta || (enOferta ? "¡OFERTA!" : "");
+        const precioRegular = extraData.precioRegular || (enOferta ? Math.round(precio * 1.2 * 10) / 10 : precio);
+        const comparativaTiendas = extraData.comparativaTiendas || generarComparativaTiendas(precio, nombre);
 
         carrito.push({
-
             nombre,
-
             precio,
-
+            precioRegular,
             cantidad: 1,
-
+            caducidad,
+            icono,
+            presentacion,
+            categoriaLista,
+            enOferta,
+            etiquetaOferta,
+            comparativaTiendas,
             comprado: false
-
         });
-
     }
 
-
     guardar();
-
 }
 
 
@@ -6250,6 +6421,7 @@ function eliminarDeLista(i) {
 function vaciarLista() {
 
     carrito = [];
+    detallesTiendaAbiertos = {};
 
     guardar();
 
@@ -6321,34 +6493,194 @@ function generarListaAutomaticaLegacy() {
 }
 
 
-function productoSemanal(nombre, precio, cantidad, categoriaLista) {
-    return { nombre, precio, cantidad, categoriaLista, comprado: false };
+function productoSemanal(nombre, precio, cantidad, categoriaLista, options = {}) {
+    const enOferta = Boolean(options.enOferta);
+    const precioRegular = options.precioRegular || (enOferta ? Math.round(precio * 1.22 * 10) / 10 : precio);
+    const comparativa = options.comparativaTiendas || generarComparativaTiendas(precio, nombre);
+
+    return {
+        nombre,
+        precio,
+        precioRegular,
+        cantidad: cantidad || 1,
+        categoriaLista,
+        icono: options.icono || "🛒",
+        presentacion: options.presentacion || "",
+        caducidad: options.caducidad || "Consumo habitual",
+        enOferta,
+        etiquetaOferta: options.etiquetaOferta || (enOferta ? "¡OFERTA!" : ""),
+        comparativaTiendas: comparativa,
+        comprado: false
+    };
 }
 
 function generarListaAutomatica() {
-
-    /* Compra base para una persona durante una semana. */
+    detallesTiendaAbiertos = {};
+    /* Despensa semanal balanceada, variada y completa con ofertas, caducidades y comparador de tiendas */
     carrito = [
-        productoSemanal("Frijol Negro 900g", 32, 1, "Abarrotes"),
-        productoSemanal("Arroz Morelos 1kg", 35, 1, "Abarrotes"),
-        productoSemanal("Pasta Spaghetti 200g", 17, 1, "Abarrotes"),
-        productoSemanal("Avena 400g", 28, 1, "Abarrotes"),
-        productoSemanal("Atún en Agua 140g", 22, 2, "Lácteos y proteína"),
-        productoSemanal("Aceite Vegetal 1L", 48, 1, "Abarrotes"),
-        productoSemanal("Leche Entera Neto 1L", 26, 2, "Lácteos y proteína"),
-        productoSemanal("Huevo Blanco 18 Piezas", 52, 1, "Lácteos y proteína"),
-        productoSemanal("Queso Oaxaca 400g", 68, 1, "Lácteos y proteína"),
-        productoSemanal("Yogurt Natural 1kg", 38, 1, "Lácteos y proteína"),
-        productoSemanal("Plátano", 28, 1, "Frutas y verduras"),
-        productoSemanal("Manzana Roja", 45, 1, "Frutas y verduras"),
-        productoSemanal("Jitomate Saladet", 34, 1, "Frutas y verduras"),
-        productoSemanal("Cebolla Blanca", 29, 1, "Frutas y verduras"),
-        productoSemanal("Papa Blanca", 31, 1, "Frutas y verduras"),
-        productoSemanal("Zanahoria", 27, 1, "Frutas y verduras"),
-        productoSemanal("Aguacate Hass", 69, 1, "Frutas y verduras"),
-        productoSemanal("Jabón para Trastes 750ml", 32, 1, "Hogar y limpieza"),
-        productoSemanal("Cloro 1L", 24, 1, "Hogar y limpieza"),
-        productoSemanal("Papel Higiénico 4pz", 32, 1, "Hogar y limpieza")
+        // Frutas y verduras (frescas para la despensa semanal)
+        productoSemanal("Jitomate Saladet 1kg", 26.50, 1, "Frutas y verduras", {
+            icono: "🍅",
+            presentacion: "1 kg fresco",
+            caducidad: "26/09/2026",
+            enOferta: true,
+            etiquetaOferta: "22% OFF",
+            precioRegular: 34.00
+        }),
+        productoSemanal("Plátano Tabasco 1kg", 22.00, 1, "Frutas y verduras", {
+            icono: "🍌",
+            presentacion: "1 kg",
+            caducidad: "25/09/2026",
+            enOferta: true,
+            etiquetaOferta: "¡Oferta de Temporada!",
+            precioRegular: 28.00
+        }),
+        productoSemanal("Cebolla Blanca 1kg", 24.00, 1, "Frutas y verduras", {
+            icono: "🧅",
+            presentacion: "1 kg",
+            caducidad: "02/10/2026",
+            enOferta: true,
+            etiquetaOferta: "17% OFF",
+            precioRegular: 29.00
+        }),
+        productoSemanal("Papa Blanca 1kg", 31.00, 1, "Frutas y verduras", {
+            icono: "🥔",
+            presentacion: "1 kg",
+            caducidad: "05/10/2026"
+        }),
+        productoSemanal("Manzana Roja 1kg", 42.00, 1, "Frutas y verduras", {
+            icono: "🍎",
+            presentacion: "1 kg",
+            caducidad: "29/09/2026"
+        }),
+        productoSemanal("Aguacate Hass 1kg", 65.00, 1, "Frutas y verduras", {
+            icono: "🥑",
+            presentacion: "1 kg",
+            caducidad: "26/09/2026",
+            enOferta: true,
+            etiquetaOferta: "¡Precio Especial!",
+            precioRegular: 74.00
+        }),
+        productoSemanal("Limón con Semilla 1kg", 32.00, 1, "Frutas y verduras", {
+            icono: "🍋",
+            presentacion: "1 kg",
+            caducidad: "01/10/2026",
+            enOferta: true,
+            etiquetaOferta: "18% OFF",
+            precioRegular: 39.00
+        }),
+
+        // Abarrotes esenciales
+        productoSemanal("Frijol Negro 900g", 27.50, 1, "Abarrotes", {
+            icono: "🫘",
+            presentacion: "Bolsa 900 g",
+            caducidad: "12/12/2026",
+            enOferta: true,
+            etiquetaOferta: "19% OFF",
+            precioRegular: 34.00
+        }),
+        productoSemanal("Arroz Morelos 1kg", 32.00, 1, "Abarrotes", {
+            icono: "🍚",
+            presentacion: "Bolsa 1 kg",
+            caducidad: "08/03/2027"
+        }),
+        productoSemanal("Aceite Vegetal 1L", 42.50, 1, "Abarrotes", {
+            icono: "🫗",
+            presentacion: "Botella 1 L",
+            caducidad: "15/01/2027",
+            enOferta: true,
+            etiquetaOferta: "¡Oferta Semanal!",
+            precioRegular: 49.90
+        }),
+        productoSemanal("Atún en Agua 140g", 18.50, 2, "Abarrotes", {
+            icono: "🐟",
+            presentacion: "Lata 140 g",
+            caducidad: "10/11/2028",
+            enOferta: true,
+            etiquetaOferta: "20% OFF",
+            precioRegular: 23.00
+        }),
+        productoSemanal("Pasta Spaghetti 200g", 15.00, 1, "Abarrotes", {
+            icono: "🍝",
+            presentacion: "Paquete 200 g",
+            caducidad: "22/06/2028"
+        }),
+        productoSemanal("Avena Natural 400g", 26.00, 1, "Abarrotes", {
+            icono: "🌾",
+            presentacion: "Bolsa 400 g",
+            caducidad: "14/02/2028"
+        }),
+
+        // Lácteos y proteína
+        productoSemanal("Leche Entera Neto 1L", 23.50, 2, "Lácteos y proteína", {
+            icono: "🥛",
+            presentacion: "Envase 1 L",
+            caducidad: "20/11/2026",
+            enOferta: true,
+            etiquetaOferta: "¡En Oferta!",
+            precioRegular: 27.00
+        }),
+        productoSemanal("Huevo Blanco 18 Piezas", 48.00, 1, "Lácteos y proteína", {
+            icono: "🥚",
+            presentacion: "Cartón 18 piezas",
+            caducidad: "15/12/2026",
+            enOferta: true,
+            etiquetaOferta: "14% OFF",
+            precioRegular: 56.00
+        }),
+        productoSemanal("Queso Oaxaca 400g", 64.00, 1, "Lácteos y proteína", {
+            icono: "🧀",
+            presentacion: "Paquete 400 g",
+            caducidad: "05/12/2026"
+        }),
+        productoSemanal("Yogurt Natural 1kg", 36.00, 1, "Lácteos y proteína", {
+            icono: "🥛",
+            presentacion: "Envase 1 kg",
+            caducidad: "28/11/2026"
+        }),
+
+        // Pan y tortillas
+        productoSemanal("Tortillas de Maíz 1kg", 22.00, 1, "Pan y tortillas", {
+            icono: "🌮",
+            presentacion: "Paquete 1 kg",
+            caducidad: "22/09/2026"
+        }),
+        productoSemanal("Pan Blanco Grande", 38.00, 1, "Pan y tortillas", {
+            icono: "🍞",
+            presentacion: "Pan de caja 680 g",
+            caducidad: "28/11/2026",
+            enOferta: true,
+            etiquetaOferta: "13% OFF",
+            precioRegular: 44.00
+        }),
+
+        // Hogar y limpieza
+        productoSemanal("Detergente 1kg", 46.00, 1, "Hogar y limpieza", {
+            icono: "🧺",
+            presentacion: "Bolsa 1 kg",
+            caducidad: "01/01/2028",
+            enOferta: true,
+            etiquetaOferta: "15% OFF",
+            precioRegular: 54.00
+        }),
+        productoSemanal("Cloro 1L", 22.00, 1, "Hogar y limpieza", {
+            icono: "🧴",
+            presentacion: "Botella 1 L",
+            caducidad: "08/09/2027"
+        }),
+        productoSemanal("Papel Higiénico 4pz", 28.00, 1, "Hogar y limpieza", {
+            icono: "🧻",
+            presentacion: "Paquete 4 piezas",
+            caducidad: "01/01/2030",
+            enOferta: true,
+            etiquetaOferta: "20% OFF",
+            precioRegular: 35.00
+        }),
+        productoSemanal("Jabón para Trastes 750ml", 29.00, 1, "Hogar y limpieza", {
+            icono: "🫧",
+            presentacion: "Botella 750 ml",
+            caducidad: "15/05/2028"
+        })
     ];
 
     guardar();
