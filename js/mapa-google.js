@@ -349,27 +349,6 @@ const GoogleMapsMexa = (() => {
         }
     }
 
-    // Modo Pantalla Completa / Expandir Mapa
-    function togglePantallaCompleta() {
-        const card = document.querySelector(".map-card");
-        if (!card) return;
-
-        const esFull = card.classList.toggle("map-fullscreen");
-        const btnFull = document.getElementById("gmapsFullscreenBtn");
-        if (btnFull) {
-            btnFull.title = esFull ? "Salir de pantalla completa" : "Expandir mapa";
-            btnFull.innerHTML = esFull ?
-                `<svg viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-14v3h3v2h-5V5h2z"/></svg>` :
-                `<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`;
-        }
-
-        setTimeout(() => {
-            if (window.mapa) window.mapa.invalidateSize();
-        }, 200);
-
-        mostrarToast(esFull ? "Mapa en pantalla completa" : "Vista normal");
-    }
-
     // Configurar listeners de la interfaz
     function configurarEventos() {
         if (configurarEventos._iniciado) return;
@@ -493,8 +472,6 @@ const GoogleMapsMexa = (() => {
         // Pegman Street View
         document.getElementById("gmapsPegmanBtn")?.addEventListener("click", activarModoStreetView);
 
-        // Botón pantalla completa
-        document.getElementById("gmapsFullscreenBtn")?.addEventListener("click", togglePantallaCompleta);
     }
 
     return {

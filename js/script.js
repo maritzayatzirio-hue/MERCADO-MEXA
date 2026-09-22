@@ -2903,7 +2903,6 @@ function construirDireccion(
 ========================= */
 
 const ordenCategoriasLista = [
-    "Frutas y verduras",
     "Abarrotes",
     "Lácteos y proteína",
     "Pan y tortillas",
@@ -2912,7 +2911,6 @@ const ordenCategoriasLista = [
 ];
 
 const iconosCategoriasLista = {
-    "Frutas y verduras": "🥬",
     "Abarrotes": "🥫",
     "Lácteos y proteína": "🥛",
     "Pan y tortillas": "🍞",
@@ -2924,9 +2922,6 @@ function categoriaDeProducto(producto) {
     if (producto.categoriaLista) return producto.categoriaLista;
     const nombre = String(producto.nombre || "").toLowerCase();
 
-    if (/manzana|plátano|naranja|mandarina|limón|mango|papaya|jitomate|cebolla|papa|zanahoria|aguacate|lechuga/.test(nombre)) {
-        return "Frutas y verduras";
-    }
     if (/leche|queso|yogurt|huevo|pollo|carne|atún/.test(nombre)) {
         return "Lácteos y proteína";
     }
@@ -5984,152 +5979,6 @@ function getCategoriasBase() {
         },
 
 
-        /* =========================
-           FRUTAS Y VERDURAS - 13
-        ========================= */
-
-        {
-            nombre:
-                "FRUTAS Y VERDURAS",
-
-            icono:
-                "🍎",
-
-            productos: [
-
-                productoCatalogo(
-                    "Manzana Roja",
-                    45,
-                    "1 kg",
-                    "10/09/2026",
-                    "FR-101",
-                    "🍎",
-                    156
-                ),
-
-                productoCatalogo(
-                    "Plátano",
-                    28,
-                    "1 kg",
-                    "11/09/2026",
-                    "FR-102",
-                    "🍌",
-                    203
-                ),
-
-                productoCatalogo(
-                    "Naranja",
-                    32,
-                    "1 kg",
-                    "13/09/2026",
-                    "FR-103",
-                    "🍊",
-                    178
-                ),
-
-                productoCatalogo(
-                    "Mandarina",
-                    36,
-                    "1 kg",
-                    "14/09/2026",
-                    "FR-104",
-                    "🍊",
-                    134
-                ),
-
-                productoCatalogo(
-                    "Limón",
-                    39,
-                    "1 kg",
-                    "13/09/2026",
-                    "FR-105",
-                    "🍋",
-                    211
-                ),
-
-                productoCatalogo(
-                    "Mango Ataulfo",
-                    49,
-                    "1 kg",
-                    "11/09/2026",
-                    "FR-106",
-                    "🥭",
-                    189
-                ),
-
-                productoCatalogo(
-                    "Papaya",
-                    35,
-                    "1 kg",
-                    "12/09/2026",
-                    "FR-107",
-                    "🥭",
-                    121
-                ),
-
-                productoCatalogo(
-                    "Jitomate Saladet",
-                    34,
-                    "1 kg",
-                    "10/09/2026",
-                    "VR-101",
-                    "🍅",
-                    198
-                ),
-
-                productoCatalogo(
-                    "Cebolla Blanca",
-                    29,
-                    "1 kg",
-                    "15/09/2026",
-                    "VR-102",
-                    "🧅",
-                    142
-                ),
-
-                productoCatalogo(
-                    "Papa Blanca",
-                    31,
-                    "1 kg",
-                    "18/09/2026",
-                    "VR-103",
-                    "🥔",
-                    167
-                ),
-
-                productoCatalogo(
-                    "Zanahoria",
-                    27,
-                    "1 kg",
-                    "16/09/2026",
-                    "VR-104",
-                    "🥕",
-                    153
-                ),
-
-                productoCatalogo(
-                    "Aguacate Hass",
-                    69,
-                    "1 kg",
-                    "12/09/2026",
-                    "VR-105",
-                    "🥑",
-                    245
-                ),
-
-                productoCatalogo(
-                    "Lechuga Romana",
-                    24,
-                    "1 pieza",
-                    "10/09/2026",
-                    "VR-106",
-                    "🥬",
-                    112
-                )
-
-            ]
-        }
-
     ];
     
 
@@ -6518,58 +6367,6 @@ function generarListaAutomatica() {
     detallesTiendaAbiertos = {};
     /* Despensa semanal balanceada, variada y completa con ofertas, caducidades y comparador de tiendas */
     carrito = [
-        // Frutas y verduras (frescas para la despensa semanal)
-        productoSemanal("Jitomate Saladet 1kg", 26.50, 1, "Frutas y verduras", {
-            icono: "🍅",
-            presentacion: "1 kg fresco",
-            caducidad: "26/09/2026",
-            enOferta: true,
-            etiquetaOferta: "22% OFF",
-            precioRegular: 34.00
-        }),
-        productoSemanal("Plátano Tabasco 1kg", 22.00, 1, "Frutas y verduras", {
-            icono: "🍌",
-            presentacion: "1 kg",
-            caducidad: "25/09/2026",
-            enOferta: true,
-            etiquetaOferta: "¡Oferta de Temporada!",
-            precioRegular: 28.00
-        }),
-        productoSemanal("Cebolla Blanca 1kg", 24.00, 1, "Frutas y verduras", {
-            icono: "🧅",
-            presentacion: "1 kg",
-            caducidad: "02/10/2026",
-            enOferta: true,
-            etiquetaOferta: "17% OFF",
-            precioRegular: 29.00
-        }),
-        productoSemanal("Papa Blanca 1kg", 31.00, 1, "Frutas y verduras", {
-            icono: "🥔",
-            presentacion: "1 kg",
-            caducidad: "05/10/2026"
-        }),
-        productoSemanal("Manzana Roja 1kg", 42.00, 1, "Frutas y verduras", {
-            icono: "🍎",
-            presentacion: "1 kg",
-            caducidad: "29/09/2026"
-        }),
-        productoSemanal("Aguacate Hass 1kg", 65.00, 1, "Frutas y verduras", {
-            icono: "🥑",
-            presentacion: "1 kg",
-            caducidad: "26/09/2026",
-            enOferta: true,
-            etiquetaOferta: "¡Precio Especial!",
-            precioRegular: 74.00
-        }),
-        productoSemanal("Limón con Semilla 1kg", 32.00, 1, "Frutas y verduras", {
-            icono: "🍋",
-            presentacion: "1 kg",
-            caducidad: "01/10/2026",
-            enOferta: true,
-            etiquetaOferta: "18% OFF",
-            precioRegular: 39.00
-        }),
-
         // Abarrotes esenciales
         productoSemanal("Frijol Negro 900g", 27.50, 1, "Abarrotes", {
             icono: "🫘",
