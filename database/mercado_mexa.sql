@@ -30,11 +30,9 @@ CREATE TABLE usuarios (
     password VARCHAR(255) NOT NULL,
     telefono VARCHAR(20),
     direccion TEXT,
-<<<<<<< HEAD
     rol ENUM('usuario', 'chofer', 'admin') DEFAULT 'usuario' NOT NULL,
-=======
-    rol ENUM('usuario', 'chofer', 'admin') DEFAULT 'usuario',
->>>>>>> 7bc17bd4d2a1cf42c82c027c06a36971f12590eb
+    estado_chofer ENUM('disponible', 'en_ruta') DEFAULT 'disponible',
+    entregas INT DEFAULT 0,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     activo TINYINT(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -160,7 +158,7 @@ CREATE TABLE pedidos (
     usuario_id INT NOT NULL,
     tienda_id VARCHAR(50),
     total DECIMAL(10,2) NOT NULL,
-    estado ENUM('pendiente', 'procesando', 'completado', 'cancelado') DEFAULT 'pendiente',
+    estado ENUM('pendiente', 'procesando', 'en_ruta', 'entregado', 'completado', 'cancelado') DEFAULT 'pendiente',
     metodo_pago VARCHAR(50),
     fecha_pedido TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
@@ -337,15 +335,12 @@ INSERT INTO tiendas (id, nombre, ciudad, direccion, lat, lng) VALUES
 -- INSERTAR USUARIO DE EJEMPLO
 -- ============================================
 
-<<<<<<< HEAD
-INSERT INTO usuarios (nombre, email, password, telefono, direccion, rol) VALUES
-('Alexandra Gómez', 'usuario@mexamexa.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9511234567', 'Tlaxiaco, Oaxaca', 'usuario'),
-('Carlos Ramírez', 'chofer@mexamexa.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9512345678', 'Tlaxiaco, Oaxaca', 'chofer'),
-('Admin Mercado Mexa', 'admin@mexamexa.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9513456789', 'Oficinas Mercado Mexa', 'admin');
-=======
 INSERT INTO usuarios (nombre, apellidos, email, password, telefono, direccion, rol) VALUES
-('Alexandra', 'Hernandez', 'alexandra@ejemplo.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9511234567', 'Tlaxiaco, Oaxaca', 'admin');
->>>>>>> 7bc17bd4d2a1cf42c82c027c06a36971f12590eb
+('Alexandra', 'Gómez', 'usuario@mexamexa.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9511234567', 'Tlaxiaco, Oaxaca', 'usuario'),
+('Carlos', 'Ramírez', 'chofer@mexamexa.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9512345678', 'Tlaxiaco, Oaxaca', 'chofer'),
+('Admin', 'Mercado Mexa', 'admin@mexamexa.com', '$2y$10$8K1p/a0dL1LXMIgoEDFrOOemGp/MOQJGnRACGvC0MjC.1qHBzLQW', '9513456789', 'Oficinas Mercado Mexa', 'admin');
+
+UPDATE usuarios SET estado_chofer = 'disponible', entregas = 14 WHERE email = 'chofer@mexamexa.com';
 
 
 -- ============================================
