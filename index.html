@@ -88,8 +88,6 @@
         </div>
 
 
-        <nav class="nav-principal">
-
             <button class="nav-item activo" data-target="inicio">
                 <span>⌂</span>
                 <small>Inicio</small>
@@ -299,7 +297,7 @@
                 </div>
 
             </section>
-
+   
 
             <!-- =========================
                  MAPA + TIENDAS
@@ -1304,16 +1302,70 @@
 
 </div>
 
-<!-- LEAFLET -->
 
+
+
+
+<!-- =========================
+     ASISTENTE NETO FLOTANTE
+========================= -->
+
+<div class="neto-float" id="netoFloat">
+    <div class="neto-bubble" id="netoBubble">
+        <button class="neto-bubble-close" id="netoBubbleClose" type="button">×</button>
+        <strong>¡Hola! Soy Neto 👋</strong>
+        Dime tu presupuesto y te armo tu despensa con lo más indispensable.
+    </div>
+
+    <button class="neto-btn" id="netoBtn" type="button" title="Asistente Neto">
+        <span class="neto-ring"></span>
+        <span class="neto-face">
+            <span class="neto-eyes">•&nbsp;•</span>
+            <span class="neto-smile"></span>
+        </span>
+        <span class="neto-badge" id="netoBadge">✨</span>
+    </button>
+</div>
+
+
+<!-- =========================
+     MODAL DE OFERTAS
+========================= -->
+
+<div class="ventana-modal" id="modalOfertas">
+    <div class="contenido-modal catalogo-modal ofertas-modal">
+
+        <button class="cerrar-modal" id="cerrarOfertas" type="button">×</button>
+
+        <div class="catalogo-encabezado">
+            <div class="catalogo-logo" style="background:linear-gradient(135deg,#ff6a2d,#ff4b12);">
+                🔥
+            </div>
+            <div>
+                <span class="section-label" style="color:#ff4b12;">PROMOCIONES</span>
+                <h2>OFERTAS DE LA SEMANA</h2>
+                <p class="catalogo-direccion" id="ofertasInfo">
+                    Cargando productos en descuento...
+                </p>
+            </div>
+        </div>
+
+        <div id="ofertasProductos" class="catalogo-productos"></div>
+
+    </div>
+</div>
+
+<!-- LEAFLET -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js"></script>
 
-
 <script src="js/mapa-google.js"></script>
 <script src="js/script.js"></script>
 <script src="js/roles.js"></script>
+
+
+
 
 </body>
 </html>

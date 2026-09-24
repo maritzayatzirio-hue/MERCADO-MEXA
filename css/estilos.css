@@ -5134,4 +5134,1300 @@ footer > strong {
     filter: brightness(1.1);
     transform: translateY(-1px);
 }
+/* ========================================
+   ASISTENTE NETO
+======================================== */
 
+.modal-asistente-neto {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 24, 32, 0.65);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    z-index: 9999;
+
+    animation: aparecerAsistente 0.25s ease;
+}
+
+.asistente-contenido {
+    position: relative;
+
+    width: min(430px, 100%);
+
+    background: var(--crema-2);
+
+    border-radius: 24px;
+
+    padding: 32px;
+
+    text-align: center;
+
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+
+    animation: subirAsistente 0.3s ease;
+}
+
+.asistente-cerrar {
+    position: absolute;
+
+    top: 14px;
+    right: 16px;
+
+    width: 36px;
+    height: 36px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #eee8df;
+
+    color: var(--negro);
+
+    font-size: 25px;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.asistente-cerrar:hover {
+    background: var(--naranja);
+    color: white;
+}
+
+.asistente-icono {
+    width: 70px;
+    height: 70px;
+
+    margin: 0 auto 15px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: var(--naranja);
+
+    font-size: 34px;
+
+    box-shadow: 0 8px 20px rgba(255, 75, 18, 0.25);
+}
+
+.asistente-contenido h2 {
+    margin: 0 0 10px;
+
+    color: var(--negro);
+
+    font-size: 26px;
+}
+
+.asistente-contenido > p {
+    margin: 0 auto 18px;
+
+    color: var(--gris);
+
+    line-height: 1.5;
+}
+
+.asistente-mensaje {
+    background: #fff;
+
+    border: 1px solid var(--borde);
+
+    border-radius: 14px;
+
+    padding: 14px;
+
+    margin-bottom: 22px;
+
+    color: var(--negro-2);
+
+    font-size: 14px;
+
+    line-height: 1.4;
+}
+
+.asistente-presupuesto {
+    text-align: left;
+
+    margin-bottom: 20px;
+}
+
+.asistente-presupuesto label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    font-weight: 700;
+
+    color: var(--negro);
+}
+
+.campo-dinero {
+    display: flex;
+    align-items: center;
+
+    border: 2px solid var(--borde);
+
+    background: white;
+
+    border-radius: 14px;
+
+    overflow: hidden;
+
+    transition: 0.2s;
+}
+
+.campo-dinero:focus-within {
+    border-color: var(--naranja);
+}
+
+.campo-dinero span {
+    padding-left: 16px;
+
+    font-size: 20px;
+
+    font-weight: 700;
+
+    color: var(--naranja);
+}
+
+.campo-dinero input {
+    width: 100%;
+
+    border: none;
+    outline: none;
+
+    padding: 14px;
+
+    background: transparent;
+
+    font-size: 20px;
+
+    font-weight: 600;
+
+    color: var(--negro);
+}
+
+.boton-generar-despensa {
+    width: 100%;
+
+    border: none;
+
+    border-radius: 14px;
+
+    padding: 15px;
+
+    background: var(--naranja);
+
+    color: white;
+
+    font-size: 15px;
+
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.boton-generar-despensa:hover {
+    background: var(--naranja-2);
+
+    transform: translateY(-2px);
+}
+
+@keyframes aparecerAsistente {
+
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+
+}
+
+@keyframes subirAsistente {
+
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+}
+
+
+/* =====================================================
+   BOTÓN FLOTANTE ASISTENTE NETO
+===================================================== */
+
+.neto-float {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9500;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.neto-float > * {
+    pointer-events: auto;
+}
+
+.neto-bubble {
+    max-width: 260px;
+    padding: 12px 16px;
+    background: #fffdf8;
+    color: #111820;
+    border: 2px solid #111820;
+    border-radius: 16px 16px 4px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    box-shadow: 6px 6px 0 rgba(17, 24, 32, 0.9);
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+    transform-origin: bottom right;
+    transition: opacity .35s ease, transform .35s cubic-bezier(.2,.9,.3,1.4);
+    position: relative;
+}
+
+.neto-bubble.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.neto-bubble strong {
+    color: #ff4b12;
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+}
+
+.neto-bubble::after {
+    content: "";
+    position: absolute;
+    right: 18px;
+    bottom: -10px;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-top: 10px solid #111820;
+}
+
+.neto-bubble-close {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 14px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+}
+
+.neto-bubble-close:hover {
+    color: #111820;
+}
+
+.neto-btn {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    border: 3px solid white;
+    background: linear-gradient(135deg, #ff6a2d 0%, #ff4b12 60%, #d93b06 100%);
+    color: white;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    box-shadow:
+        0 10px 25px rgba(255, 75, 18, 0.45),
+        0 4px 10px rgba(0, 0, 0, 0.15),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.15),
+        inset 0 3px 6px rgba(255, 255, 255, 0.35);
+    transition: transform .25s cubic-bezier(.2,.9,.3,1.4), box-shadow .25s ease;
+    animation: netoFloat 3s ease-in-out infinite;
+}
+
+.neto-btn:hover {
+    transform: scale(1.08) rotate(-4deg);
+    box-shadow:
+        0 15px 35px rgba(255, 75, 18, 0.55),
+        0 6px 14px rgba(0, 0, 0, 0.2),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.15),
+        inset 0 3px 6px rgba(255, 255, 255, 0.35);
+}
+
+.neto-btn:active {
+    transform: scale(0.95);
+}
+
+.neto-face {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    line-height: 1;
+}
+
+.neto-eyes {
+    display: flex;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 900;
+    color: white;
+    animation: netoBlink 4s infinite;
+}
+
+.neto-smile {
+    width: 22px;
+    height: 10px;
+    border-bottom: 3px solid white;
+    border-radius: 0 0 22px 22px;
+    margin-top: 2px;
+}
+
+.neto-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    background: #ffd60a;
+    color: #111820;
+    font-size: 10px;
+    font-weight: 900;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    border: 2px solid white;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+    animation: netoPulse 1.8s infinite;
+}
+
+.neto-ring {
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 75, 18, 0.5);
+    animation: netoRing 2.2s infinite;
+    pointer-events: none;
+}
+
+@keyframes netoFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+}
+
+@keyframes netoBlink {
+    0%, 92%, 100% { transform: scaleY(1); }
+    95%           { transform: scaleY(0.1); }
+}
+
+@keyframes netoPulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.18); }
+}
+
+@keyframes netoRing {
+    0%   { transform: scale(1);   opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+@media (max-width: 650px) {
+    .neto-float {
+        bottom: 18px;
+        right: 14px;
+    }
+    .neto-btn {
+        width: 60px;
+        height: 60px;
+    }
+    .neto-bubble {
+        max-width: 210px;
+        font-size: 11px;
+    }
+}
+
+/* =====================================================
+   ASISTENTE NETO - RESULTADO BONITO
+===================================================== */
+
+/* Contenedor principal del resultado */
+.asistente-contenido .asistente-resumen {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 18px 0 16px;
+}
+
+/* Cada tarjeta de resumen */
+.asistente-contenido .asistente-resumen > div {
+    background: white;
+    border: 1.5px solid #e6ded2;
+    border-radius: 16px;
+    padding: 14px 10px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.asistente-contenido .asistente-resumen > div:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(17,24,32,.10);
+}
+
+/* Línea de acento arriba de cada tarjeta */
+.asistente-contenido .asistente-resumen > div::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+}
+
+.asistente-contenido .asistente-resumen > div:nth-child(1)::before { background: #10b981; } /* verde presupuesto */
+.asistente-contenido .asistente-resumen > div:nth-child(2)::before { background: #ff4b12; } /* naranja total */
+.asistente-contenido .asistente-resumen > div:nth-child(3)::before { background: #6366f1; } /* morado restante */
+
+.asistente-contenido .asistente-resumen span {
+    display: block;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: var(--gris);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.asistente-contenido .asistente-resumen strong {
+    display: block;
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--negro);
+    letter-spacing: -1px;
+}
+
+.asistente-contenido .asistente-resumen > div:nth-child(1) strong { color: #059669; }
+.asistente-contenido .asistente-resumen > div:nth-child(2) strong { color: #d9381e; }
+.asistente-contenido .asistente-resumen > div:nth-child(3) strong { color: #4f46e5; }
+
+/* Barra de progreso del presupuesto */
+.asistente-progreso {
+    height: 10px;
+    background: #f0ebe3;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 0 0 18px;
+    border: 1px solid #e6ded2;
+}
+
+.asistente-progreso span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #10b981 0%, #ff4b12 100%);
+    border-radius: inherit;
+    transition: width .8s cubic-bezier(.2,.9,.3,1.2);
+    box-shadow: inset 0 -2px 4px rgba(0,0,0,.1);
+}
+
+/* Lista de productos */
+.asistente-contenido .asistente-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding: 4px 4px 4px 0;
+    margin-bottom: 18px;
+    scrollbar-width: thin;
+}
+
+.asistente-contenido .asistente-lista::-webkit-scrollbar {
+    width: 6px;
+}
+
+.asistente-contenido .asistente-lista::-webkit-scrollbar-thumb {
+    background: #d8d2c8;
+    border-radius: 999px;
+}
+
+/* Cada producto */
+.asistente-contenido .asistente-producto {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 12px;
+    background: white;
+    border: 1.5px solid #eae3d8;
+    border-radius: 14px;
+    transition: all .2s ease;
+    text-align: left;
+    animation: productoAsistente .35s ease both;
+}
+
+.asistente-contenido .asistente-producto:hover {
+    border-color: var(--naranja);
+    transform: translateX(3px);
+    box-shadow: 0 6px 16px rgba(255,75,18,.10);
+}
+
+@keyframes productoAsistente {
+    from { opacity: 0; transform: translateX(-10px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.asistente-contenido .asistente-producto-icono {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    background: #fff4ed;
+    border-radius: 12px;
+    font-size: 22px;
+    border: 1px solid #ffd9c4;
+}
+
+.asistente-contenido .asistente-producto > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.asistente-contenido .asistente-producto > div strong {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--negro);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -0.2px;
+}
+
+.asistente-contenido .asistente-producto > div small {
+    display: block;
+    font-size: 10px;
+    color: var(--gris);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 700;
+}
+
+.asistente-contenido .asistente-producto > strong {
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--naranja);
+    white-space: nowrap;
+    padding: 4px 8px;
+    background: #fff4ed;
+    border-radius: 8px;
+}
+
+/* Banner de ahorro */
+.asistente-ahorro-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+    border: 1.5px dashed #10b981;
+    border-radius: 14px;
+    padding: 11px 14px;
+    margin: 0 0 16px;
+    text-align: left;
+}
+
+.asistente-ahorro-banner .ahorro-icono {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.asistente-ahorro-banner .ahorro-texto strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 900;
+    color: #047857;
+    margin-bottom: 2px;
+}
+
+.asistente-ahorro-banner .ahorro-texto p {
+    margin: 0;
+    font-size: 10.5px;
+    color: #065f46;
+    line-height: 1.4;
+}
+
+/* Botón secundario (Generar otra) */
+.asistente-boton-secundario {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    background: white;
+    color: var(--negro);
+    border: 1.5px solid #ded9d0;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all .2s ease;
+}
+
+.asistente-boton-secundario:hover {
+    background: #f6f1e8;
+    border-color: var(--negro);
+    transform: translateY(-2px);
+}
+
+/* Botón principal con brillo al pasar mouse */
+.asistente-contenido .boton-generar-despensa {
+    position: relative;
+    overflow: hidden;
+}
+
+.asistente-contenido .boton-generar-despensa::before {
+    content: "";
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+    transition: left .6s ease;
+}
+
+.asistente-contenido .boton-generar-despensa:hover::before {
+    left: 100%;
+}
+
+/* Mensaje de "presupuesto insuficiente" más amable */
+.asistente-contenido .asistente-icono {
+    background: linear-gradient(135deg, #ff6a2d, #ff4b12);
+    border: 4px solid #fff4ed;
+    box-shadow:
+        0 8px 20px rgba(255,75,18,.3),
+        0 0 0 8px rgba(255,75,18,.08);
+}
+
+/* Responsive */
+@media (max-width: 520px) {
+    .asistente-contenido .asistente-resumen {
+        grid-template-columns: 1fr;
+    }
+    .asistente-contenido .asistente-resumen > div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: left;
+    }
+    .asistente-contenido .asistente-resumen span {
+        margin: 0;
+    }
+    .asistente-contenido .asistente-producto-icono {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+}
+
+/* =====================================================
+   ASISTENTE NETO — MODO COMPACTO
+   Reduce alturas y paddings para que quepa sin scroll
+===================================================== */
+
+/* Modal más compacto */
+.asistente-contenido {
+    width: min(400px, 92vw) !important;
+    padding: 22px 22px 18px !important;
+    border-radius: 20px !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+}
+
+/* Ícono más pequeño */
+.asistente-icono {
+    width: 54px !important;
+    height: 54px !important;
+    font-size: 26px !important;
+    margin: 0 auto 10px !important;
+    box-shadow: 0 6px 16px rgba(255, 75, 18, 0.22) !important;
+}
+
+/* Título más chico */
+.asistente-contenido h2 {
+    font-size: 19px !important;
+    margin: 0 0 6px !important;
+}
+
+/* Párrafo más compacto */
+.asistente-contenido > p {
+    font-size: 12px !important;
+    margin: 0 auto 12px !important;
+    line-height: 1.4 !important;
+}
+
+/* Caja de mensaje */
+.asistente-mensaje {
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+    margin-bottom: 14px !important;
+    border-radius: 12px !important;
+}
+
+/* Campo de presupuesto */
+.asistente-presupuesto {
+    margin-bottom: 14px !important;
+}
+
+.asistente-presupuesto label {
+    font-size: 12px !important;
+    margin-bottom: 6px !important;
+}
+
+.campo-dinero {
+    border-radius: 12px !important;
+}
+
+.campo-dinero span {
+    font-size: 17px !important;
+    padding-left: 13px !important;
+}
+
+.campo-dinero input {
+    padding: 11px !important;
+    font-size: 17px !important;
+}
+
+/* Botón principal */
+.boton-generar-despensa {
+    padding: 12px !important;
+    font-size: 13px !important;
+    border-radius: 12px !important;
+}
+
+/* Botón cerrar (X) más discreto */
+.asistente-cerrar {
+    width: 30px !important;
+    height: 30px !important;
+    top: 10px !important;
+    right: 12px !important;
+    font-size: 20px !important;
+}
+
+/* =====================================================
+   RESULTADO — MODO COMPACTO
+===================================================== */
+
+/* Barra de progreso más delgada */
+.asistente-progreso {
+    height: 7px !important;
+    margin: 0 0 12px !important;
+}
+
+/* Tarjetas de resumen más chicas */
+.asistente-contenido .asistente-resumen {
+    gap: 7px !important;
+    margin: 12px 0 12px !important;
+}
+
+.asistente-contenido .asistente-resumen > div {
+    padding: 10px 8px !important;
+    border-radius: 12px !important;
+}
+
+.asistente-contenido .asistente-resumen span {
+    font-size: 8px !important;
+    margin-bottom: 3px !important;
+}
+
+.asistente-contenido .asistente-resumen strong {
+    font-size: 15px !important;
+}
+
+/* Banner de ahorro más compacto */
+.asistente-ahorro-banner {
+    padding: 9px 11px !important;
+    margin: 0 0 12px !important;
+    border-radius: 12px !important;
+}
+
+.asistente-ahorro-banner .ahorro-icono {
+    font-size: 18px !important;
+}
+
+.asistente-ahorro-banner .ahorro-texto strong {
+    font-size: 11px !important;
+}
+
+.asistente-ahorro-banner .ahorro-texto p {
+    font-size: 9.5px !important;
+}
+
+/* Lista de productos más bajita */
+.asistente-contenido .asistente-lista {
+    max-height: 220px !important;
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+}
+
+.asistente-contenido .asistente-producto {
+    padding: 8px 10px !important;
+    border-radius: 11px !important;
+    gap: 9px !important;
+}
+
+.asistente-contenido .asistente-producto-icono {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 17px !important;
+    border-radius: 9px !important;
+}
+
+.asistente-contenido .asistente-producto > div strong {
+    font-size: 11.5px !important;
+}
+
+.asistente-contenido .asistente-producto > div small {
+    font-size: 9px !important;
+}
+
+.asistente-contenido .asistente-producto > strong {
+    font-size: 11.5px !important;
+    padding: 3px 7px !important;
+}
+
+/* Botones de acción más chicos */
+.asistente-contenido .boton-generar-despensa {
+    padding: 11px !important;
+    font-size: 12.5px !important;
+}
+
+.asistente-boton-secundario {
+    padding: 10px !important;
+    font-size: 11.5px !important;
+    margin-top: 7px !important;
+}
+
+/* En móvil, aún más compacto */
+@media (max-width: 520px) {
+    .asistente-contenido {
+        padding: 18px 16px 14px !important;
+        border-radius: 18px !important;
+    }
+
+    .asistente-icono {
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 22px !important;
+    }
+
+    .asistente-contenido h2 {
+        font-size: 17px !important;
+    }
+
+    .asistente-contenido .asistente-resumen {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 5px !important;
+    }
+
+    .asistente-contenido .asistente-resumen span {
+        font-size: 7px !important;
+    }
+
+    .asistente-contenido .asistente-resumen strong {
+        font-size: 13px !important;
+    }
+
+    .asistente-contenido .asistente-lista {
+        max-height: 180px !important;
+    }
+}
+
+/* =====================================================
+   BANNER DE PROMOCIONES
+===================================================== */
+
+.promo-banner {
+    position: relative;
+    margin: 14px 0;
+    border-radius: 20px;
+    overflow: hidden;
+    background:
+        linear-gradient(135deg,
+            #fff4ed 0%,
+            #ffe8d8 40%,
+            #ffd4b8 100%);
+    border: 1.5px solid #ffc7a8;
+    box-shadow: 0 8px 24px rgba(255, 75, 18, 0.12);
+    animation: promoEntrada .55s cubic-bezier(.2,.9,.3,1.2) both;
+}
+
+@keyframes promoEntrada {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.promo-contenido {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 20px 26px;
+}
+
+.promo-icono {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #ff6a2d, #ff4b12);
+    font-size: 32px;
+    box-shadow:
+        0 8px 20px rgba(255, 75, 18, 0.35),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.15),
+        inset 0 3px 6px rgba(255, 255, 255, 0.3);
+    animation: promoFuego 2.4s ease-in-out infinite;
+}
+
+@keyframes promoFuego {
+    0%, 100% { transform: scale(1) rotate(-3deg); }
+    50%      { transform: scale(1.08) rotate(3deg); }
+}
+
+.promo-texto {
+    flex: 1;
+    min-width: 0;
+}
+
+.promo-etiqueta {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1.3px;
+    color: #ff4b12;
+    background: #fff;
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+    border: 1px solid #ffd4c2;
+}
+
+.promo-texto strong {
+    display: block;
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--negro);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+}
+
+.promo-texto p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: #6d5a52;
+    font-weight: 600;
+}
+
+.promo-texto p b {
+    color: #ff4b12;
+    font-weight: 900;
+}
+
+.promo-btn {
+    flex-shrink: 0;
+    min-height: 48px;
+    padding: 0 22px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--negro);
+    color: white;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all .25s cubic-bezier(.2,.9,.3,1.2);
+    box-shadow: 0 6px 16px rgba(17, 24, 32, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+.promo-btn::before {
+    content: "";
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+    transition: left .55s ease;
+}
+
+.promo-btn:hover {
+    background: #ff4b12;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(255, 75, 18, 0.35);
+}
+
+.promo-btn:hover::before {
+    left: 100%;
+}
+
+/* Formas decorativas del banner */
+.promo-shape {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.promo-shape-1 {
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(255,75,18,.15), transparent 70%);
+    top: -80px; right: -40px;
+}
+
+.promo-shape-2 {
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(255,212,184,.6), transparent 70%);
+    bottom: -60px; left: 20%;
+}
+
+/* Responsive del banner */
+@media (max-width: 650px) {
+    .promo-contenido {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px 18px;
+    }
+    .promo-icono {
+        width: 54px; height: 54px;
+        font-size: 26px;
+    }
+    .promo-texto strong { font-size: 17px; }
+    .promo-texto p { font-size: 11px; }
+    .promo-btn {
+        width: 100%;
+        min-height: 44px;
+    }
+}
+
+/* =====================================================
+   MODAL DE OFERTAS
+===================================================== */
+
+.ofertas-modal {
+    width: min(1100px, 95vw);
+    max-height: 92vh;
+}
+
+.ofertas-modal .catalogo-productos {
+    padding-top: 10px;
+}
+
+/* Badge de OFERTA en los productos (por si no lo tienen ya) */
+.producto-catalogo .producto-precio-descuento {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 11px;
+    font-weight: 900;
+    color: white;
+    background: #ff4b12;
+    padding: 2px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.3px;
+    vertical-align: middle;
+}
+
+/* =====================================================
+   BANNER DE PROMOCIONES DENTRO DEL CATÁLOGO
+===================================================== */
+
+.promo-banner-catalogo {
+    margin: 4px 0 18px;
+    border-radius: 16px;
+    background:
+        linear-gradient(135deg,
+            #fff4ed 0%,
+            #ffe8d8 40%,
+            #ffd4b8 100%);
+}
+
+.promo-banner-catalogo .promo-contenido {
+    padding: 14px 18px;
+    gap: 14px;
+}
+
+.promo-banner-catalogo .promo-icono {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+    border-radius: 14px;
+}
+
+.promo-banner-catalogo .promo-etiqueta {
+    font-size: 8px;
+    padding: 2px 8px;
+    margin-bottom: 4px;
+}
+
+.promo-banner-catalogo .promo-texto strong {
+    font-size: 15px;
+}
+
+.promo-banner-catalogo .promo-texto p {
+    font-size: 10.5px;
+    margin-top: 2px;
+}
+
+.promo-banner-catalogo .promo-btn {
+    min-height: 40px;
+    padding: 0 16px;
+    font-size: 10.5px;
+    border-radius: 11px;
+}
+
+/* En móvil el banner del catálogo también se compacta */
+@media (max-width: 650px) {
+    .promo-banner-catalogo .promo-contenido {
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+    }
+
+    .promo-banner-catalogo .promo-icono {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+
+    .promo-banner-catalogo .promo-texto strong {
+        font-size: 13px;
+    }
+
+    .promo-banner-catalogo .promo-texto p {
+        font-size: 9.5px;
+    }
+
+    .promo-banner-catalogo .promo-btn {
+        min-height: 36px;
+        padding: 0 12px;
+        font-size: 10px;
+        white-space: nowrap;
+    }
+
+   
+}
+/* =====================================================
+   AJUSTE DEFINITIVO DEL SIDEBAR
+===================================================== */
+
+/* Contenedor principal del sidebar: no dejar que se comprima */
+.sidebar {
+    overflow-y: auto;
+    overflow-x: hidden;
+    justify-content: flex-start;
+}
+
+/* El logo NO se encoge */
+.sidebar-logo {
+    flex-shrink: 0;
+    margin-bottom: 24px;
+}
+
+/* El nav tiene separación garantizada */
+.sidebar .nav-principal {
+    margin-top: 12px !important;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+/* Cada botón más chico para que quepan todos */
+.sidebar .nav-principal .nav-item {
+    min-height: 60px !important;
+    padding: 6px 0;
+}
+
+/* Los íconos un poco más pequeños */
+.sidebar .nav-principal .nav-item span {
+    font-size: 20px !important;
+}
+
+.sidebar .nav-principal .nav-item small {
+    font-size: 8px !important;
+}
+
+/* El bottom se queda al fondo */
+.sidebar-bottom {
+    margin-top: auto !important;
+    padding-top: 20px;
+    flex-shrink: 0;
+}
+
+/* Si la pantalla es MUY baja, achicamos aún más */
+@media (max-height: 700px) {
+    .sidebar-logo {
+        margin-bottom: 12px;
+    }
+    .sidebar .nav-principal {
+        margin-top: 4px !important;
+    }
+    .sidebar .nav-principal .nav-item {
+        min-height: 52px !important;
+    }
+    .sidebar .nav-principal .nav-item span {
+        font-size: 18px !important;
+    }
+}
+
+@media (max-height: 600px) {
+    .sidebar {
+        padding: 14px 10px;
+    }
+    .sidebar-logo {
+        margin-bottom: 8px;
+    }
+    .sidebar .logo-cuadro {
+        width: 34px;
+        height: 34px;
+        font-size: 18px;
+    }
+    .sidebar .nav-principal {
+        margin-top: 0 !important;
+        gap: 4px !important;
+    }
+    .sidebar .nav-principal .nav-item {
+        min-height: 46px !important;
+    }
+    .sidebar .nav-principal .nav-item span {
+        font-size: 16px !important;
+    }
+    .sidebar .nav-principal .nav-item small {
+        font-size: 7px !important;
+    }
+    .local-badge span {
+        font-size: 18px !important;
+    }
+}
