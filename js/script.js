@@ -1,5 +1,12 @@
 let mapa = null;
 let ubicacionUsuario = null;
+let direccionEntregaMapa = null;
+let tiendaPickupTemporalId = null;
+let tiendaPickupSeleccionadaId = null;
+let tiendaEnvioSeleccionadaId = null;
+let modalidadSelectorTienda = "pickup";
+let direccionEnvioAbierta = false;
+let filtroTiendasPedido = "todas";
 let rutaActual = null;
 let marcadoresRuta = [];
 let marcadorUsuario = null;
@@ -778,6 +785,12 @@ formRegistro?.addEventListener(
                 ?.value
                 .trim() || "";
 
+        const direccion =
+            document
+                .getElementById("registroDireccion")
+                ?.value
+                .trim() || "";
+
 
         const password =
             document
@@ -812,6 +825,7 @@ formRegistro?.addEventListener(
             !apellidos ||
             !correo ||
             !telefono ||
+            !direccion ||
             !password ||
             !passwordConfirm
         ) {
@@ -965,6 +979,8 @@ formRegistro?.addEventListener(
             correo,
 
             telefono,
+
+            direccion,
 
             passwordHash,
 
@@ -3162,8 +3178,329 @@ function renderLista() {
                     <strong>${formatearPrecio(totalPagar)}</strong>
                 </div>
             </div>
+            <div class="lista-checkout-actions">
+                <button type="button" class="btn-naranja" onclick="abrirCheckoutLista()">
+                    ¿Cómo quieres tu pedido?
+                </button>
+            </div>
         </div>
     `;
+}
+
+function abrirCheckoutLista() {
+    if (!carrito.length) {
+        mostrarNotificacionCuenta("Lista vacía", "Agrega productos antes de continuar al pago.");
+        return;
+    }
+
+    const sesion = obtenerSesionActual() || {};
+    const modal = document.getElementById("modalCheckout");
+    const contenido = document.getElementById("contenidoCheckout");
+    if (!modal || !contenido) return;
+
+    const sucursales = obtenerTiendasParaPedido();
+    const tiendaInicial = sucursales[0] || {};
+    tiendaPickupSeleccionadaId = tiendaPickupSeleccionadaId || String(tiendaInicial.id || "");
+    tiendaEnvioSeleccionadaId = tiendaEnvioSeleccionadaId || String(tiendaInicial.id || "");
+    const opcionesPickup = sucursales.map(tienda => `
+        <option value="${escapeHTML(String(tienda.id))}" ${String(tienda.id) === tiendaPickupSeleccionadaId ? "selected" : ""}>${escapeHTML(tienda.nombre)} · ${escapeHTML(tienda.direccion)}</option>
+    `).join("");
+    const opcionesEnvio = sucursales.map(tienda => `
+        <option value="${escapeHTML(String(tienda.id))}" ${String(tienda.id) === tiendaEnvioSeleccionadaId ? "selected" : ""}>${escapeHTML(tienda.nombre)} · ${escapeHTML(tienda.direccion)}</option>
+    `).join("");
+    const direccionMapa = direccionEntregaMapa || {};
+    direccionEnvioAbierta = false;
+
+    contenido.innerHTML = `
+        <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="document.getElementById('modalCheckout').classList.remove('activa')">×</button>
+        <span class="section-label">MERCADO MEXA · ENTREGA</span>
+        <h2>¿Cómo quieres tu pedido?</h2>
+        <p class="checkout-aviso">Elige recogerlo en una tienda o recibirlo en tu domicilio.</p>
+        <form id="formCheckout" class="checkout-form">
+            <input type="hidden" name="modalidad" value="pickup">
+            <div class="checkout-modalidades" role="group" aria-label="Modalidad del pedido">
+                <button type="button" class="checkout-modalidad activa" data-modalidad="pickup" aria-pressed="true" onclick="seleccionarModalidadPedido('pickup')">
+                    <span>🏪</span><strong>Pickup</strong><small>Recoge en tienda</small>
+                </button>
+                <button type="button" class="checkout-modalidad" data-modalidad="envio" aria-pressed="false" onclick="seleccionarModalidadPedido('envio')">
+                    <span>🚚</span><strong>Envío</strong><small>Recibe en casa</small>
+                </button>
+            </div>
+            <section class="checkout-modo-panel" id="panelPickup">
+                <span class="checkout-label-tienda">Tienda para recoger</span>
+                <button type="button" class="checkout-tienda-resumen" onclick="abrirSelectorTiendasPedido('pickup')" aria-label="Elegir tienda para pickup">
+                    <span class="checkout-tienda-icono">🏪</span>
+                    <span class="checkout-tienda-resumen-texto">
+                        <small id="checkoutTiendaTipo">TIENDA NETO</small>
+                        <strong id="checkoutTiendaNombre">${escapeHTML(tiendaInicial.nombre || "Elige una tienda")}</strong>
+                        <span id="checkoutTiendaDireccion">${escapeHTML(tiendaInicial.direccion || "")}</span>
+                    </span>
+                    <span class="checkout-tienda-flecha" aria-hidden="true">›</span>
+                </button>
+                <select name="tiendaPickup" id="checkoutTiendaPickup" class="checkout-select-oculto" aria-hidden="true" tabindex="-1">${opcionesPickup}</select>
+                <p class="checkout-modo-descripcion">Recoge tu pedido en tu tienda preferida.</p>
+                <div class="checkout-horarios">
+                    <p>${sesion.rol === "usuario" ? "Consulta los horarios de pickup al confirmar con la tienda." : "Para consultar los horarios de pickup, inicia sesión en tu cuenta."}</p>
+                    ${sesion.rol === "usuario" ? "" : '<button type="button" class="btn-link-cuenta" onclick="abrirAccesoCheckout()">Iniciar sesión o crear cuenta</button>'}
+                </div>
+            </section>
+            <section class="checkout-modo-panel" id="panelEnvio" hidden>
+                <div class="checkout-direccion-card">
+                    <div class="checkout-direccion-card-info">
+                        <span class="checkout-direccion-pin" aria-hidden="true">⌖</span>
+                        <div>
+                            <strong id="checkoutDomicilioResumen">${escapeHTML(direccionMapa.completo || sesion.direccion || "Agrega una dirección para recibir el pedido")}</strong>
+                            <small>${direccionMapa.completo ? "Ubicación del mapa" : "Activa tu ubicación o agrega tu domicilio"}</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-naranja checkout-agregar-direccion" id="btnAgregarDireccion" aria-expanded="false" onclick="alternarDireccionEnvioCheckout()">Agregar dirección</button>
+                    <div class="checkout-direccion-form" id="formularioDireccionEnvio" hidden>
+                        <button type="button" class="btn-outline checkout-ubicacion-btn" onclick="usarUbicacionMapaEnCheckout()">⌖ Usar ubicación del mapa</button>
+                        <label>Calle y número
+                            <input name="calle" type="text" value="${escapeHTML(direccionMapa.calle || sesion.direccion || "")}" autocomplete="street-address" disabled>
+                        </label>
+                        <div class="checkout-campos-dos">
+                            <label>Colonia
+                                <input name="colonia" type="text" value="${escapeHTML(direccionMapa.colonia || "")}" autocomplete="address-level3" disabled>
+                            </label>
+                            <label>Municipio o localidad
+                                <input name="municipio" type="text" value="${escapeHTML(direccionMapa.municipio || "")}" autocomplete="address-level2" disabled>
+                            </label>
+                        </div>
+                        <div class="checkout-campos-dos">
+                            <label>Código postal
+                                <input name="codigoPostal" type="text" inputmode="numeric" maxlength="5" value="${escapeHTML(direccionMapa.codigoPostal || "")}" autocomplete="postal-code" disabled>
+                            </label>
+                            <label>Referencias para llegar
+                                <input name="referencias" type="text" placeholder="Color de fachada, entre calles..." disabled>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="checkout-envio-origen">
+                    <button type="button" class="checkout-envio-tienda" onclick="abrirSelectorTiendasPedido('envio')" aria-label="Elegir tienda de envío">
+                        <span class="checkout-envio-tienda-icono">🛍️</span>
+                        <span class="checkout-envio-tienda-texto">
+                            <strong>Envío desde tienda</strong>
+                            <small>Frescos, despensa y más.</small>
+                            <span id="checkoutTiendaEnvioNombre">${escapeHTML(sucursales.find(tienda => String(tienda.id) === tiendaEnvioSeleccionadaId)?.nombre || "Selecciona una tienda")}</span>
+                        </span>
+                        <span class="checkout-tienda-flecha" aria-hidden="true">›</span>
+                    </button>
+                    <select name="tiendaEnvio" id="checkoutTiendaEnvio" class="checkout-select-oculto" aria-hidden="true" tabindex="-1" disabled>${opcionesEnvio}</select>
+                </div>
+            </section>
+            <label>Teléfono de WhatsApp
+                <input name="telefono" type="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" value="${escapeHTML(sesion.telefono || "")}" required>
+            </label>
+            <fieldset class="checkout-pagos">
+                <legend>Forma de pago</legend>
+                <label><input type="radio" name="pago" value="Efectivo al recibir" checked> Efectivo al recibir</label>
+                <label><input type="radio" name="pago" value="Transferencia bancaria"> Transferencia bancaria, se confirma por WhatsApp</label>
+                <label><input type="radio" name="pago" value="Tarjeta al recibir"> Tarjeta al recibir, coordinar disponibilidad</label>
+            </fieldset>
+            <div class="checkout-total">
+                <span>Total del pedido</span>
+                <strong>${formatearPrecio(carrito.reduce((total, item) => total + item.precio * (item.cantidad || 1), 0))}</strong>
+            </div>
+            <button class="btn-naranja grande" type="submit">Confirmar pedido y abrir WhatsApp</button>
+        </form>
+    `;
+
+    modal.classList.add("activa");
+    const form = document.getElementById("formCheckout");
+    form?.addEventListener("submit", confirmarPedidoLista);
+    sincronizarTiendasCheckout();
+}
+
+function obtenerTiendasParaPedido() {
+    return tiendas.length ? tiendas : tiendasNetoZona;
+}
+
+function seleccionarModalidadPedido(modalidad) {
+    const form = document.getElementById("formCheckout");
+    if (!form) return;
+
+    const esEnvio = modalidad === "envio";
+    form.querySelector('[name="modalidad"]').value = esEnvio ? "envio" : "pickup";
+    document.getElementById("panelPickup").hidden = esEnvio;
+    document.getElementById("panelEnvio").hidden = !esEnvio;
+    document.querySelectorAll(".checkout-modalidad").forEach(boton => {
+        const seleccionado = boton.dataset.modalidad === modalidad;
+        boton.classList.toggle("activa", seleccionado);
+        boton.setAttribute("aria-pressed", String(seleccionado));
+    });
+
+    document.getElementById("formularioDireccionEnvio").querySelectorAll("input").forEach(campo => {
+        campo.disabled = !esEnvio || !direccionEnvioAbierta;
+        campo.required = esEnvio && direccionEnvioAbierta && ["calle", "colonia", "municipio"].includes(campo.name);
+    });
+    const tiendaEnvio = document.getElementById("checkoutTiendaEnvio");
+    tiendaEnvio.disabled = !esEnvio;
+    tiendaEnvio.required = esEnvio;
+}
+
+function alternarDireccionEnvioCheckout() {
+    const form = document.getElementById("formCheckout");
+    const detalle = document.getElementById("formularioDireccionEnvio");
+    const boton = document.getElementById("btnAgregarDireccion");
+    if (!form || !detalle || !boton) return;
+
+    direccionEnvioAbierta = !direccionEnvioAbierta;
+    detalle.hidden = !direccionEnvioAbierta;
+    boton.setAttribute("aria-expanded", String(direccionEnvioAbierta));
+    boton.textContent = direccionEnvioAbierta ? "Ocultar dirección" : "Agregar dirección";
+
+    form.querySelectorAll("#formularioDireccionEnvio input").forEach(campo => {
+        campo.disabled = !direccionEnvioAbierta;
+        campo.required = direccionEnvioAbierta && ["calle", "colonia", "municipio"].includes(campo.name);
+    });
+}
+
+function actualizarResumenDireccionEnvio() {
+    const form = document.getElementById("formCheckout");
+    const resumen = document.getElementById("checkoutDomicilioResumen");
+    if (!form || !resumen) return;
+
+    const partes = [form.elements.calle.value, form.elements.colonia.value, form.elements.municipio.value, form.elements.codigoPostal.value].map(valor => valor.trim()).filter(Boolean);
+    resumen.textContent = partes.join(", ") || "Agrega una dirección para recibir el pedido";
+}
+
+function sincronizarTiendasCheckout() {
+    document.getElementById("formularioDireccionEnvio")?.addEventListener("input", actualizarResumenDireccionEnvio);
+}
+
+async function usarUbicacionMapaEnCheckout() {
+    if (!direccionEntregaMapa && ubicacionUsuario) {
+        await obtenerNombreLugar(ubicacionUsuario.lat, ubicacionUsuario.lng);
+    }
+
+    const direccion = direccionEntregaMapa;
+    if (!direccion) {
+        mostrarNotificacionCuenta("Ubicación no disponible", "Activa tu ubicación en el mapa e inténtalo de nuevo.");
+        return;
+    }
+
+    const form = document.getElementById("formCheckout");
+    if (!form) return;
+    if (!direccionEnvioAbierta) alternarDireccionEnvioCheckout();
+    form.elements.calle.value = direccion.calle || direccion.completo;
+    form.elements.colonia.value = direccion.colonia || "";
+    form.elements.municipio.value = direccion.municipio || "";
+    form.elements.codigoPostal.value = direccion.codigoPostal || "";
+    actualizarResumenDireccionEnvio();
+}
+
+function abrirAccesoCheckout() {
+    document.getElementById("modalLogin")?.classList.add("activa");
+}
+
+function confirmarPedidoLista(evento) {
+    evento.preventDefault();
+
+    const form = evento.currentTarget;
+    const datos = new FormData(form);
+    const sesion = obtenerSesionActual();
+    if (!sesion || sesion.rol !== "usuario") {
+        mostrarNotificacionCuenta("Inicia sesión", "Inicia sesión o crea una cuenta para confirmar tu pedido.");
+        abrirAccesoCheckout();
+        return;
+    }
+
+    const telefono = String(datos.get("telefono") || "").trim();
+    const modalidad = String(datos.get("modalidad") || "pickup");
+    const tiendaId = datos.get(modalidad === "envio" ? "tiendaEnvio" : "tiendaPickup");
+    const tiendaPedido = obtenerTiendasParaPedido().find(tienda => String(tienda.id) === String(tiendaId));
+    const calle = modalidad === "envio" ? String(form.elements.calle.value || "").trim() : "";
+    const colonia = modalidad === "envio" ? String(form.elements.colonia.value || "").trim() : "";
+    const municipio = modalidad === "envio" ? String(form.elements.municipio.value || "").trim() : "";
+    const codigoPostal = modalidad === "envio" ? String(form.elements.codigoPostal.value || "").trim() : "";
+    const referencias = modalidad === "envio" ? String(form.elements.referencias.value || "").trim() : "";
+
+    if (!/^\d{10}$/.test(telefono)) {
+        mostrarNotificacionCuenta("Teléfono no válido", "Escribe un número de 10 dígitos para WhatsApp.");
+        return;
+    }
+
+    if (!tiendaPedido) {
+        mostrarNotificacionCuenta("Tienda no disponible", "Selecciona una tienda para continuar.");
+        return;
+    }
+
+    if (modalidad === "envio" && (!calle || !colonia || !municipio)) {
+        if (!direccionEnvioAbierta) alternarDireccionEnvioCheckout();
+        mostrarNotificacionCuenta("Completa tu dirección", "Agrega calle, colonia y municipio para recibir el pedido.");
+        return;
+    }
+
+    const direccion = modalidad === "envio"
+        ? [calle, colonia, municipio, codigoPostal].filter(Boolean).join(", ")
+        : tiendaPedido.direccion;
+    const total = carrito.reduce((suma, item) => suma + item.precio * (item.cantidad || 1), 0);
+    const fecha = new Date();
+    const codigoEntrega = String(Math.floor(100000 + Math.random() * 900000));
+    const productos = carrito.map(item => `${item.nombre} (${item.cantidad || 1})`).join(", ");
+    const pedido = {
+        id: `MX-${fecha.getTime().toString(36).toUpperCase()}`,
+        usuarioId: sesion.id,
+        cliente: `${sesion.nombre} ${sesion.apellidos || ""}`.trim(),
+        telefono,
+        direccion,
+        referencias,
+        modalidad,
+        tienda: tiendaPedido.nombre,
+        tiendaDireccion: tiendaPedido.direccion,
+        total,
+        productos,
+        items: carrito.map(item => ({ nombre: item.nombre, cantidad: item.cantidad || 1, precio: item.precio })),
+        metodoPago: datos.get("pago"),
+        codigoEntrega,
+        estado: "pendiente",
+        fecha: fecha.toLocaleString("es-MX"),
+        chofer: "Por asignar"
+    };
+
+    const pedidos = obtenerPedidosMexa();
+    pedidos.unshift(pedido);
+    guardarPedidosMexa(pedidos);
+
+    const cuentas = obtenerCuentas();
+    const cuenta = cuentas.find(item => item.id === sesion.id);
+    if (cuenta) {
+        cuenta.telefono = telefono;
+        if (modalidad === "envio") cuenta.direccion = calle;
+        guardarCuentas(cuentas);
+        guardarSesion(cuenta);
+    }
+
+    const lineasProductos = pedido.items.map(item => `- ${item.nombre} x${item.cantidad}: ${formatearPrecio(item.precio * item.cantidad)}`).join("\n");
+    const tipoEntrega = modalidad === "pickup" ? "Pickup en tienda" : "Envío a domicilio";
+    const ticket = `MERCADO MEXA | Ticket ${pedido.id}\nCliente: ${pedido.cliente}\nTeléfono: ${telefono}\nModalidad: ${tipoEntrega}\nTienda: ${tiendaPedido.nombre} - ${tiendaPedido.direccion}\n${modalidad === "envio" ? `Entrega: ${direccion}\nReferencias: ${referencias || "Sin referencias"}\n` : "Recoge tu pedido en la tienda seleccionada.\n"}Pago: ${pedido.metodoPago}\n\n${lineasProductos}\n\nTotal: ${formatearPrecio(total)}\nCódigo para entregar al repartidor: ${codigoEntrega}`;
+    const whatsapp = `https://wa.me/52${telefono}?text=${encodeURIComponent(ticket)}`;
+
+    carrito = [];
+    guardar();
+
+    const contenido = document.getElementById("contenidoCheckout");
+    contenido.innerHTML = `
+        <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="document.getElementById('modalCheckout').classList.remove('activa')">×</button>
+        <div class="ticket-confirmado">
+            <span class="section-label">PEDIDO REGISTRADO</span>
+            <h2>Tu ticket está listo</h2>
+            <p>Pedido <strong>${escapeHTML(pedido.id)}</strong> · Total <strong>${formatearPrecio(total)}</strong></p>
+            <p><strong>${tipoEntrega}</strong> · ${escapeHTML(tiendaPedido.nombre)}</p>
+            <div class="ticket-codigo">
+                <span>CÓDIGO PARA EL REPARTIDOR</span>
+                <strong>${escapeHTML(codigoEntrega)}</strong>
+            </div>
+            <p>Comparte este código con el repartidor al recibir tu pedido.</p>
+            <a class="btn-naranja grande checkout-whatsapp" href="${whatsapp}" target="_blank" rel="noopener">Enviar ticket por WhatsApp</a>
+            <small>El pedido se guardó en este dispositivo. El método de pago se coordina con el cliente; no se realizó ningún cargo.</small>
+        </div>
+    `;
+
+    window.open(whatsapp, "_blank", "noopener");
+    mostrarNotificacionCuenta("Pedido confirmado", `Guarda tu código de entrega: ${codigoEntrega}`);
 }
 
 function seleccionarTiendaProducto(indice, nombreTienda, precioTienda) {
@@ -4109,6 +4446,20 @@ async function obtenerNombreLugar(
         const a =
             data.address || {};
 
+        const calle = [a.house_number, a.road].filter(Boolean).join(" ");
+        const colonia = a.neighbourhood || a.suburb || a.quarter || "";
+        const municipio = a.city || a.town || a.village || a.municipality || a.county || "";
+        const codigoPostal = a.postcode || "";
+        const partesDireccion = [calle, colonia, municipio, codigoPostal, a.state].filter(Boolean);
+        direccionEntregaMapa = {
+            calle,
+            colonia,
+            municipio,
+            codigoPostal,
+            completo: partesDireccion.join(", ") || data.display_name || `Ubicación: ${lat.toFixed(5)}, ${lon.toFixed(5)}`
+        };
+        window.direccionEntregaMapa = direccionEntregaMapa;
+
 
         const lugar =
 
@@ -4128,11 +4479,14 @@ async function obtenerNombreLugar(
         estadoUbicacion.textContent =
             lugar.toUpperCase();
 
+        return direccionEntregaMapa;
 
     } catch (error) {
 
         estadoUbicacion.textContent =
             "GPS ACTIVO";
+
+        return null;
 
     }
 
@@ -7574,4 +7928,130 @@ if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", iniciarModuloOfertas);
 } else {
     iniciarModuloOfertas();
+}
+
+function abrirSelectorTiendasPedido(modalidad = "pickup") {
+    modalidadSelectorTienda = modalidad;
+    const select = document.getElementById(modalidad === "envio" ? "checkoutTiendaEnvio" : "checkoutTiendaPickup");
+    if (!select) return;
+
+    tiendaPickupTemporalId = select.value;
+    filtroTiendasPedido = "todas";
+
+    document.getElementById("selectorTiendasPedido")?.remove();
+    const panel = document.createElement("div");
+    panel.id = "selectorTiendasPedido";
+    panel.className = "selector-tiendas-backdrop";
+    panel.setAttribute("role", "presentation");
+    panel.innerHTML = `
+        <aside class="selector-tiendas-panel" role="dialog" aria-modal="true" aria-labelledby="selectorTiendasTitulo">
+            <header class="selector-tiendas-header">
+                <h2 id="selectorTiendasTitulo">Elegir tienda</h2>
+                <button type="button" class="selector-tiendas-cerrar" aria-label="Cerrar" onclick="cerrarSelectorTiendasPedido()">×</button>
+            </header>
+            <div class="selector-tiendas-controles">
+                <label class="selector-tiendas-busqueda" aria-label="Buscar tienda">
+                    <span aria-hidden="true">⌕</span>
+                    <input type="search" id="buscarTiendaPedido" placeholder="Buscar tienda, calle o colonia" autocomplete="off">
+                </label>
+                <button type="button" class="selector-tiendas-ubicacion" onclick="usarUbicacionParaSelectorTiendas()">⌖ <span>Usar mi ubicación actual</span></button>
+                <div class="selector-tiendas-filtros" role="group" aria-label="Filtrar tiendas">
+                    <button type="button" class="activo" data-filtro-tiendas="todas">Todas</button>
+                    <button type="button" data-filtro-tiendas="cercanas">Más cercanas</button>
+                </div>
+            </div>
+            <div class="selector-tiendas-lista" id="selectorTiendasPedidoLista" role="radiogroup" aria-label="Sucursales disponibles"></div>
+            <footer class="selector-tiendas-footer">
+                <button type="button" class="btn-naranja grande" onclick="confirmarTiendaPickup()">Elegir tienda</button>
+            </footer>
+        </aside>
+    `;
+    panel.addEventListener("click", evento => {
+        if (evento.target === panel) cerrarSelectorTiendasPedido();
+    });
+    document.body.appendChild(panel);
+    panel.querySelector("#buscarTiendaPedido").addEventListener("input", renderTiendasSelectorPedido);
+    panel.querySelectorAll("[data-filtro-tiendas]").forEach(boton => {
+        boton.addEventListener("click", () => {
+            filtroTiendasPedido = boton.dataset.filtroTiendas;
+            panel.querySelectorAll("[data-filtro-tiendas]").forEach(tab => tab.classList.toggle("activo", tab === boton));
+            renderTiendasSelectorPedido();
+        });
+    });
+    renderTiendasSelectorPedido();
+    panel.querySelector("#buscarTiendaPedido").focus();
+}
+
+function renderTiendasSelectorPedido() {
+    const lista = document.getElementById("selectorTiendasPedidoLista");
+    if (!lista) return;
+
+    const busqueda = document.getElementById("buscarTiendaPedido")?.value.trim().toLowerCase() || "";
+    const sucursales = obtenerTiendasParaPedido().filter(tienda => {
+        const texto = `${tienda.nombre} ${tienda.direccion} ${tienda.ciudad || ""}`.toLowerCase();
+        const coincideBusqueda = texto.includes(busqueda);
+        const coincideFiltro = filtroTiendasPedido !== "cercanas" || (Number.isFinite(tienda.distancia) ? tienda.distancia <= 25 : true);
+        return coincideBusqueda && coincideFiltro;
+    });
+
+    lista.innerHTML = sucursales.length ? sucursales.map(tienda => `
+        <button type="button" class="selector-tienda-opcion ${String(tienda.id) === String(tiendaPickupTemporalId) ? "seleccionada" : ""}" role="radio" aria-checked="${String(tienda.id) === String(tiendaPickupTemporalId)}" onclick="seleccionarTiendaPickupTemporal('${escapeJS(String(tienda.id))}')">
+            <span class="selector-tienda-radio" aria-hidden="true"></span>
+            <span class="selector-tienda-datos">
+                <span class="selector-tienda-titulo">
+                    <small>${escapeHTML(tienda.categoria || "TIENDA NETO")}</small>
+                    <strong>${escapeHTML(tienda.nombre)}</strong>
+                </span>
+                <span class="selector-tienda-direccion">${escapeHTML(tienda.direccion)}</span>
+                <span class="selector-tienda-distancia">${Number.isFinite(tienda.distancia) ? `${tienda.distancia.toFixed(1)} km · ` : ""}✓ Pickup en tienda</span>
+            </span>
+        </button>
+    `).join("") : '<p class="selector-tiendas-vacio">No encontramos tiendas con esa búsqueda.</p>';
+}
+
+function seleccionarTiendaPickupTemporal(tiendaId) {
+    tiendaPickupTemporalId = tiendaId;
+    renderTiendasSelectorPedido();
+}
+
+function confirmarTiendaPickup() {
+    const tienda = obtenerTiendasParaPedido().find(item => String(item.id) === String(tiendaPickupTemporalId));
+    const esEnvio = modalidadSelectorTienda === "envio";
+    const select = document.getElementById(esEnvio ? "checkoutTiendaEnvio" : "checkoutTiendaPickup");
+    if (!tienda || !select) return;
+
+    select.value = String(tienda.id);
+    if (esEnvio) {
+        tiendaEnvioSeleccionadaId = String(tienda.id);
+        document.getElementById("checkoutTiendaEnvioNombre").textContent = tienda.nombre;
+    } else {
+        tiendaPickupSeleccionadaId = String(tienda.id);
+        document.getElementById("checkoutTiendaTipo").textContent = tienda.categoria || "TIENDA NETO";
+        document.getElementById("checkoutTiendaNombre").textContent = tienda.nombre;
+        document.getElementById("checkoutTiendaDireccion").textContent = tienda.direccion;
+    }
+    cerrarSelectorTiendasPedido();
+}
+
+function cerrarSelectorTiendasPedido() {
+    document.getElementById("selectorTiendasPedido")?.remove();
+}
+
+function usarUbicacionParaSelectorTiendas() {
+    const sucursales = obtenerTiendasParaPedido();
+    if (!ubicacionUsuario) {
+        obtenerUbicacion();
+        mostrarNotificacionCuenta("Buscando tu ubicación", "Cuando aparezcan las sucursales cercanas, vuelve a elegir la más próxima.");
+        return;
+    }
+
+    const tiendaCercana = sucursales.reduce((cercana, tienda) => {
+        const distancia = calcularDistancia(ubicacionUsuario.lat, ubicacionUsuario.lng, tienda.lat, tienda.lng);
+        return !cercana || distancia < cercana.distanciaCalculada ? { ...tienda, distanciaCalculada: distancia } : cercana;
+    }, null);
+    if (tiendaCercana) {
+        tiendaPickupTemporalId = tiendaCercana.id;
+        filtroTiendasPedido = "todas";
+        renderTiendasSelectorPedido();
+    }
 }

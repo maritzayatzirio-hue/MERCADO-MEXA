@@ -46,6 +46,7 @@ function guardarSesion(cuenta) {
         apellidos: cuenta.apellidos || "",
         correo: cuenta.correo,
         telefono: cuenta.telefono || "",
+        direccion: cuenta.direccion || "",
         rol: cuenta.rol || "usuario",
         estadoChofer: cuenta.estadoChofer || "disponible",
         entregas: cuenta.entregas || 0
@@ -383,7 +384,7 @@ function mostrarCuentaPorRol(sesion) {
        1. PANEL USUARIO
     ========================= */
     if (sesion.rol === "usuario") {
-        const pedidosUsuario = pedidos.filter(p => p.cliente.toLowerCase().includes(sesion.nombre.toLowerCase()) || p.cliente === "Alexandra Gómez");
+        const pedidosUsuario = pedidos.filter(p => p.usuarioId ? p.usuarioId === sesion.id : (p.cliente.toLowerCase().includes(sesion.nombre.toLowerCase()) || p.cliente === "Alexandra Gómez"));
         
         panelHTML = `
             <div class="panel-rol-contenedor">
@@ -402,8 +403,11 @@ function mostrarCuentaPorRol(sesion) {
                         </div>
                         <div class="pedido-chofer-datos">
                             <p><strong>Productos:</strong> ${escapeHTMLSafe(ped.productos)}</p>
+                            ${ped.modalidad ? `<p><strong>Entrega:</strong> ${ped.modalidad === "pickup" ? "Pickup en tienda" : "Envío a domicilio"}${ped.tienda ? ` · ${escapeHTMLSafe(ped.tienda)}` : ""}</p>` : ""}
                             <p><strong>Dirección de entrega:</strong> ${escapeHTMLSafe(ped.direccion)}</p>
                             <p><strong>Total:</strong> <b style="color: var(--naranja);">$${Number(ped.total).toFixed(2)} MXN</b></p>
+                            ${ped.metodoPago ? `<p><strong>Pago:</strong> ${escapeHTMLSafe(ped.metodoPago)}</p>` : ""}
+                            ${ped.codigoEntrega ? `<p><strong>Código para el repartidor:</strong> <b>${escapeHTMLSafe(ped.codigoEntrega)}</b></p>` : ""}
                         </div>
                     </div>
                 `).join('')}
@@ -482,10 +486,14 @@ function mostrarCuentaPorRol(sesion) {
                         </div>
                         <div class="pedido-chofer-datos">
                             <p><strong>Cliente:</strong> ${escapeHTMLSafe(ped.cliente)} (📞 ${ped.telefono})</p>
-                            <p><strong>Destino:</strong> 📍 ${escapeHTMLSafe(ped.direccion)}</p>
+                            ${ped.modalidad ? `<p><strong>Modalidad:</strong> ${ped.modalidad === "pickup" ? "Pickup en tienda" : "Envío a domicilio"}</p>` : ""}
+                            ${ped.tienda ? `<p><strong>${ped.modalidad === "pickup" ? "Tienda para recoger" : "Envío desde tienda"}:</strong> ${escapeHTMLSafe(ped.tienda)} · ${escapeHTMLSafe(ped.tiendaDireccion || "")}</p>` : ""}
+                            <p><strong>${ped.modalidad === "pickup" ? "Destino pickup" : "Destino"}:</strong> 📍 ${escapeHTMLSafe(ped.direccion)}</p>
                             <p><strong>Productos:</strong> ${escapeHTMLSafe(ped.productos)}</p>
-                            <p><strong>Cobro al entregar:</strong> <b style="color: var(--naranja);">$${Number(ped.total).toFixed(2)} MXN</b></p>
+                            <p><strong>Pago:</strong> ${escapeHTMLSafe(ped.metodoPago || "Cobro al entregar")} · <b style="color: var(--naranja);">$${Number(ped.total).toFixed(2)} MXN</b></p>
+                            ${ped.referencias ? `<p><strong>Referencias:</strong> ${escapeHTMLSafe(ped.referencias)}</p>` : ""}
                         </div>
+                        ${ped.codigoEntrega ? `<label class="codigo-entrega-campo">Código que proporciona el cliente<input id="codigoEntrega-${ped.id}" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></label>` : ""}
                         <button type="button" class="btn-completar-entrega" onclick="completarEntregaChofer('${ped.id}')">
                             ✅ Marcar Pedido como Entregado
                         </button>
@@ -670,6 +678,14 @@ window.completarEntregaChofer = function(pedidoId) {
     const pedidos = obtenerPedidosMexa();
     const pedido = pedidos.find(p => p.id === pedidoId);
     if (!pedido) return;
+
+    if (pedido.codigoEntrega) {
+        const codigoIngresado = document.getElementById(`codigoEntrega-${pedido.id}`)?.value.trim();
+        if (codigoIngresado !== pedido.codigoEntrega) {
+            mostrarNotificacionCuenta("Código incorrecto", "Pide al cliente el código de entrega de su ticket.", "⚠️");
+            return;
+        }
+    }
 
     pedido.estado = "entregado";
     guardarPedidosMexa(pedidos);

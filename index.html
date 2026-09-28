@@ -786,6 +786,11 @@
 </div>
 
 
+<div class="ventana-modal" id="modalCheckout">
+    <div class="contenido-modal checkout-modal" id="contenidoCheckout"></div>
+</div>
+
+
 <!-- =========================
      MODAL CUENTA
 ========================= -->
@@ -1082,6 +1087,21 @@
                             maxlength="10"
                             required>
                     </div>
+                </div>
+            </div>
+
+            <div class="campo-cuenta">
+                <label for="registroDireccion">
+                    <span>📍</span> Dirección de entrega
+                </label>
+                <div class="input-contenedor">
+                    <input
+                        type="text"
+                        id="registroDireccion"
+                        name="direccion"
+                        placeholder="Calle, número, colonia y municipio"
+                        autocomplete="street-address"
+                        required>
                 </div>
             </div>
 
