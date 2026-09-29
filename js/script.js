@@ -1285,6 +1285,11 @@ formLogin?.addEventListener(
             `Hola ${cuenta.nombre}. ${mensaje}`
         );
 
+        const checkoutForm = document.getElementById("formCheckout");
+        if (checkoutForm?.dataset.esperandoLogin === "true") {
+            delete checkoutForm.dataset.esperandoLogin;
+            actualizarInformacionClienteCheckout();
+        }
 
         formLogin.reset();
 
@@ -2705,6 +2710,7 @@ async function crearTiendasReales(
                     direccion: construirDireccion(tags, latitud, longitud),
                     lat: latitud,
                     lng: longitud,
+                    horario: tags.opening_hours || "",
                     distancia: calcularDistancia(lat, lng, latitud, longitud)
                 };
             })
@@ -3217,6 +3223,7 @@ function abrirCheckoutLista() {
         <h2>¿Cómo quieres tu pedido?</h2>
         <p class="checkout-aviso">Elige recogerlo en una tienda o recibirlo en tu domicilio.</p>
         <form id="formCheckout" class="checkout-form">
+            <div id="checkoutFormularioVista">
             <input type="hidden" name="modalidad" value="pickup">
             <div class="checkout-modalidades" role="group" aria-label="Modalidad del pedido">
                 <button type="button" class="checkout-modalidad activa" data-modalidad="pickup" aria-pressed="true" onclick="seleccionarModalidadPedido('pickup')">
@@ -3240,9 +3247,10 @@ function abrirCheckoutLista() {
                 <select name="tiendaPickup" id="checkoutTiendaPickup" class="checkout-select-oculto" aria-hidden="true" tabindex="-1">${opcionesPickup}</select>
                 <p class="checkout-modo-descripcion">Recoge tu pedido en tu tienda preferida.</p>
                 <div class="checkout-horarios">
-                    <p>${sesion.rol === "usuario" ? "Consulta los horarios de pickup al confirmar con la tienda." : "Para consultar los horarios de pickup, inicia sesión en tu cuenta."}</p>
-                    ${sesion.rol === "usuario" ? "" : '<button type="button" class="btn-link-cuenta" onclick="abrirAccesoCheckout()">Iniciar sesión o crear cuenta</button>'}
+                    <button type="button" class="btn-link-cuenta" id="btnVerHorarioPickup" aria-expanded="false" onclick="alternarHorarioPickup()">Ver horario de servicio</button>
+                    <p id="checkoutHorarioPickup" aria-live="polite" hidden></p>
                 </div>
+                ${sesion.rol === "usuario" ? "" : '<button class="btn-outline grande" type="button" onclick="abrirAccesoCheckout()">Iniciar sesión</button>'}
             </section>
             <section class="checkout-modo-panel" id="panelEnvio" hidden>
                 <div class="checkout-direccion-card">
@@ -3278,32 +3286,19 @@ function abrirCheckoutLista() {
                     </div>
                 </div>
                 <div class="checkout-envio-origen">
-                    <button type="button" class="checkout-envio-tienda" onclick="abrirSelectorTiendasPedido('envio')" aria-label="Elegir tienda de envío">
-                        <span class="checkout-envio-tienda-icono">🛍️</span>
+                    <div class="checkout-envio-tienda">
                         <span class="checkout-envio-tienda-texto">
                             <strong>Envío desde tienda</strong>
                             <small>Frescos, despensa y más.</small>
-                            <span id="checkoutTiendaEnvioNombre">${escapeHTML(sucursales.find(tienda => String(tienda.id) === tiendaEnvioSeleccionadaId)?.nombre || "Selecciona una tienda")}</span>
                         </span>
-                        <span class="checkout-tienda-flecha" aria-hidden="true">›</span>
-                    </button>
+                    </div>
                     <select name="tiendaEnvio" id="checkoutTiendaEnvio" class="checkout-select-oculto" aria-hidden="true" tabindex="-1" disabled>${opcionesEnvio}</select>
                 </div>
+                ${sesion.rol === "usuario" ? "" : '<button class="btn-outline grande" type="button" onclick="abrirAccesoCheckout()">Iniciar sesión</button>'}
             </section>
-            <label>Teléfono de WhatsApp
-                <input name="telefono" type="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" value="${escapeHTML(sesion.telefono || "")}" required>
-            </label>
-            <fieldset class="checkout-pagos">
-                <legend>Forma de pago</legend>
-                <label><input type="radio" name="pago" value="Efectivo al recibir" checked> Efectivo al recibir</label>
-                <label><input type="radio" name="pago" value="Transferencia bancaria"> Transferencia bancaria, se confirma por WhatsApp</label>
-                <label><input type="radio" name="pago" value="Tarjeta al recibir"> Tarjeta al recibir, coordinar disponibilidad</label>
-            </fieldset>
-            <div class="checkout-total">
-                <span>Total del pedido</span>
-                <strong>${formatearPrecio(carrito.reduce((total, item) => total + item.precio * (item.cantidad || 1), 0))}</strong>
+            <button class="btn-naranja grande" type="submit">Confirmar pedido</button>
             </div>
-            <button class="btn-naranja grande" type="submit">Confirmar pedido y abrir WhatsApp</button>
+            <section id="checkoutResumenVista" class="checkout-resumen-pedido" hidden></section>
         </form>
     `;
 
@@ -3315,6 +3310,31 @@ function abrirCheckoutLista() {
 
 function obtenerTiendasParaPedido() {
     return tiendas.length ? tiendas : tiendasNetoZona;
+}
+
+function actualizarDetalleHorarioPickup() {
+    const detalle = document.getElementById("checkoutHorarioPickup");
+    const select = document.getElementById("checkoutTiendaPickup");
+    if (!detalle || !select) return;
+
+    const tienda = obtenerTiendasParaPedido().find(item => String(item.id) === String(select.value));
+    const horario = String(tienda?.horario || "").trim();
+    detalle.textContent = horario
+        ? `Horario de servicio: ${horario}`
+        : "Horario no disponible para esta sucursal. Confirma directamente en la tienda.";
+}
+
+function alternarHorarioPickup() {
+    const detalle = document.getElementById("checkoutHorarioPickup");
+    const boton = document.getElementById("btnVerHorarioPickup");
+    if (!detalle || !boton) return;
+
+    const mostrar = detalle.hidden;
+    if (mostrar) actualizarDetalleHorarioPickup();
+
+    detalle.hidden = !mostrar;
+    boton.setAttribute("aria-expanded", String(mostrar));
+    boton.textContent = mostrar ? "Ocultar horario" : "Ver horario de servicio";
 }
 
 function seleccionarModalidadPedido(modalidad) {
@@ -3395,19 +3415,39 @@ function abrirAccesoCheckout() {
     document.getElementById("modalLogin")?.classList.add("activa");
 }
 
+function actualizarInformacionClienteCheckout() {
+    const panel = document.getElementById("checkoutClientePago");
+    const sesion = obtenerSesionActual();
+    if (!panel || !sesion || sesion.rol !== "usuario") return;
+
+    const cuenta = obtenerCuentas().find(item => String(item.id) === String(sesion.id)) || sesion;
+    const datos = [
+        ["Nombre", `${cuenta.nombre || sesion.nombre || ""} ${cuenta.apellidos || sesion.apellidos || ""}`.trim()],
+        ["Correo", cuenta.correo || sesion.correo || ""],
+        ["Celular", cuenta.telefono || sesion.telefono || ""]
+    ].filter(([, valor]) => valor);
+
+    panel.innerHTML = `
+        <strong>Datos de tu cuenta</strong>
+        ${datos.map(([etiqueta, valor]) => `<span><small>${etiqueta}</small>${escapeHTML(valor)}</span>`).join("")}
+    `;
+    panel.hidden = false;
+}
+
 function confirmarPedidoLista(evento) {
     evento.preventDefault();
 
     const form = evento.currentTarget;
     const datos = new FormData(form);
-    const sesion = obtenerSesionActual();
-    if (!sesion || sesion.rol !== "usuario") {
+    const sesion = obtenerSesionActual() || {};
+    if (form.dataset.pedidoEnRevision === "true" && sesion.rol !== "usuario") {
         mostrarNotificacionCuenta("Inicia sesión", "Inicia sesión o crea una cuenta para confirmar tu pedido.");
+        form.dataset.esperandoLogin = "true";
         abrirAccesoCheckout();
         return;
     }
 
-    const telefono = String(datos.get("telefono") || "").trim();
+    const telefono = String(sesion.telefono || "").trim();
     const modalidad = String(datos.get("modalidad") || "pickup");
     const tiendaId = datos.get(modalidad === "envio" ? "tiendaEnvio" : "tiendaPickup");
     const tiendaPedido = obtenerTiendasParaPedido().find(tienda => String(tienda.id) === String(tiendaId));
@@ -3416,11 +3456,6 @@ function confirmarPedidoLista(evento) {
     const municipio = modalidad === "envio" ? String(form.elements.municipio.value || "").trim() : "";
     const codigoPostal = modalidad === "envio" ? String(form.elements.codigoPostal.value || "").trim() : "";
     const referencias = modalidad === "envio" ? String(form.elements.referencias.value || "").trim() : "";
-
-    if (!/^\d{10}$/.test(telefono)) {
-        mostrarNotificacionCuenta("Teléfono no válido", "Escribe un número de 10 dígitos para WhatsApp.");
-        return;
-    }
 
     if (!tiendaPedido) {
         mostrarNotificacionCuenta("Tienda no disponible", "Selecciona una tienda para continuar.");
@@ -3437,7 +3472,62 @@ function confirmarPedidoLista(evento) {
         ? [calle, colonia, municipio, codigoPostal].filter(Boolean).join(", ")
         : tiendaPedido.direccion;
     const total = carrito.reduce((suma, item) => suma + item.precio * (item.cantidad || 1), 0);
+    if (form.dataset.pedidoEnRevision !== "true") {
+        const cantidadArticulos = carrito.reduce((suma, item) => suma + (item.cantidad || 1), 0);
+        const tipoEntrega = modalidad === "pickup" ? "Pickup en tienda" : "Envío a domicilio";
+        const resumenProductos = carrito.map(item => `
+            <li>
+                <span class="checkout-resumen-producto">
+                    <span class="checkout-resumen-producto-imagen" aria-hidden="true">${escapeHTML(item.icono || "🛒")}</span>
+                    <span class="checkout-resumen-producto-datos">
+                        <strong>${escapeHTML(item.nombre)}</strong>
+                        <small>Cantidad: ${item.cantidad || 1}</small>
+                    </span>
+                </span>
+                <strong>${formatearPrecio(item.precio * (item.cantidad || 1))}</strong>
+            </li>
+        `).join("");
+        const resumen = document.getElementById("checkoutResumenVista");
+        resumen.innerHTML = `
+            <span class="section-label">MERCADO MEXA · REVISIÓN</span>
+            <h2>Resumen del pedido</h2>
+            <p class="checkout-resumen-cantidad">${cantidadArticulos} ${cantidadArticulos === 1 ? "artículo" : "artículos"}</p>
+            <ul class="checkout-resumen-productos">${resumenProductos}</ul>
+            <div class="checkout-total">
+                <span>Precio aproximado</span>
+                <strong>${formatearPrecio(total)}</strong>
+            </div>
+            <div class="checkout-resumen-entrega">
+                <strong>${tipoEntrega}</strong>
+                <span>${escapeHTML(tiendaPedido.nombre)} · ${escapeHTML(direccion)}</span>
+            </div>
+            <div id="checkoutClientePago" class="checkout-cliente-pago" hidden></div>
+            <fieldset class="checkout-resumen-pagos">
+                <legend>Forma de pago</legend>
+                <label><input type="radio" name="pago" value="Efectivo al recibir" checked> Efectivo al recibir</label>
+                <label><input type="radio" name="pago" value="Transferencia bancaria"> Transferencia bancaria</label>
+                <label><input type="radio" name="pago" value="Tarjeta al recibir" onchange="actualizarOpcionesTarjetaCheckout()"> Tarjeta al recibir</label>
+                <div id="checkoutTiposTarjeta" class="checkout-tipos-tarjeta" hidden>
+                    <span>Tipo de tarjeta</span>
+                    <label><input type="radio" name="tipoTarjeta" value="Débito" checked> Débito</label>
+                    <label><input type="radio" name="tipoTarjeta" value="Crédito"> Crédito</label>
+                </div>
+            </fieldset>
+            <div class="checkout-resumen-acciones">
+                <button class="btn-outline grande" type="button" onclick="volverAEditarPedido()">Volver</button>
+                <button class="btn-naranja grande" type="button" onclick="finalizarPedidoDesdeResumen()">Pagar ahora (${cantidadArticulos})</button>
+            </div>
+            <small class="checkout-resumen-nota">Pago en línea no disponible todavía. Al continuar se registra el pedido y se coordina el cobro con la tienda; no se realizará ningún cargo ahora.</small>
+        `;
+        document.getElementById("checkoutFormularioVista").hidden = true;
+        resumen.hidden = false;
+        actualizarInformacionClienteCheckout();
+        return;
+    }
+
     const fecha = new Date();
+    const metodoPagoSeleccionado = String(datos.get("pago") || "Efectivo al recibir");
+    const tipoTarjetaSeleccionado = String(datos.get("tipoTarjeta") || "Débito");
     const codigoEntrega = String(Math.floor(100000 + Math.random() * 900000));
     const productos = carrito.map(item => `${item.nombre} (${item.cantidad || 1})`).join(", ");
     const pedido = {
@@ -3453,7 +3543,9 @@ function confirmarPedidoLista(evento) {
         total,
         productos,
         items: carrito.map(item => ({ nombre: item.nombre, cantidad: item.cantidad || 1, precio: item.precio })),
-        metodoPago: datos.get("pago"),
+        metodoPago: metodoPagoSeleccionado === "Tarjeta al recibir"
+            ? `Tarjeta de ${tipoTarjetaSeleccionado} al recibir`
+            : metodoPagoSeleccionado,
         codigoEntrega,
         estado: "pendiente",
         fecha: fecha.toLocaleString("es-MX"),
@@ -3467,16 +3559,12 @@ function confirmarPedidoLista(evento) {
     const cuentas = obtenerCuentas();
     const cuenta = cuentas.find(item => item.id === sesion.id);
     if (cuenta) {
-        cuenta.telefono = telefono;
         if (modalidad === "envio") cuenta.direccion = calle;
         guardarCuentas(cuentas);
         guardarSesion(cuenta);
     }
 
-    const lineasProductos = pedido.items.map(item => `- ${item.nombre} x${item.cantidad}: ${formatearPrecio(item.precio * item.cantidad)}`).join("\n");
     const tipoEntrega = modalidad === "pickup" ? "Pickup en tienda" : "Envío a domicilio";
-    const ticket = `MERCADO MEXA | Ticket ${pedido.id}\nCliente: ${pedido.cliente}\nTeléfono: ${telefono}\nModalidad: ${tipoEntrega}\nTienda: ${tiendaPedido.nombre} - ${tiendaPedido.direccion}\n${modalidad === "envio" ? `Entrega: ${direccion}\nReferencias: ${referencias || "Sin referencias"}\n` : "Recoge tu pedido en la tienda seleccionada.\n"}Pago: ${pedido.metodoPago}\n\n${lineasProductos}\n\nTotal: ${formatearPrecio(total)}\nCódigo para entregar al repartidor: ${codigoEntrega}`;
-    const whatsapp = `https://wa.me/52${telefono}?text=${encodeURIComponent(ticket)}`;
 
     carrito = [];
     guardar();
@@ -3486,21 +3574,49 @@ function confirmarPedidoLista(evento) {
         <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="document.getElementById('modalCheckout').classList.remove('activa')">×</button>
         <div class="ticket-confirmado">
             <span class="section-label">PEDIDO REGISTRADO</span>
-            <h2>Tu ticket está listo</h2>
+            <h2>Pedido confirmado</h2>
             <p>Pedido <strong>${escapeHTML(pedido.id)}</strong> · Total <strong>${formatearPrecio(total)}</strong></p>
             <p><strong>${tipoEntrega}</strong> · ${escapeHTML(tiendaPedido.nombre)}</p>
+            <p>Forma de pago: <strong>${escapeHTML(pedido.metodoPago)}</strong></p>
             <div class="ticket-codigo">
                 <span>CÓDIGO PARA EL REPARTIDOR</span>
                 <strong>${escapeHTML(codigoEntrega)}</strong>
             </div>
             <p>Comparte este código con el repartidor al recibir tu pedido.</p>
-            <a class="btn-naranja grande checkout-whatsapp" href="${whatsapp}" target="_blank" rel="noopener">Enviar ticket por WhatsApp</a>
-            <small>El pedido se guardó en este dispositivo. El método de pago se coordina con el cliente; no se realizó ningún cargo.</small>
+            <button class="btn-naranja grande" type="button" onclick="document.getElementById('modalCheckout').classList.remove('activa')">Cerrar</button>
+            <small>El pedido se guardó en este dispositivo. El pago se coordina con la tienda; no se realizó ningún cargo en línea.</small>
         </div>
     `;
 
-    window.open(whatsapp, "_blank", "noopener");
     mostrarNotificacionCuenta("Pedido confirmado", `Guarda tu código de entrega: ${codigoEntrega}`);
+}
+
+function finalizarPedidoDesdeResumen() {
+    const form = document.getElementById("formCheckout");
+    if (!form) return;
+    const sesion = obtenerSesionActual();
+    if (!sesion || sesion.rol !== "usuario") {
+        form.dataset.esperandoLogin = "true";
+        mostrarNotificacionCuenta("Inicia sesión para continuar", "Necesitas iniciar sesión o crear una cuenta antes de realizar el pago.");
+        abrirAccesoCheckout();
+        return;
+    }
+    form.dataset.pedidoEnRevision = "true";
+    form.requestSubmit();
+}
+
+function actualizarOpcionesTarjetaCheckout() {
+    const tipoTarjeta = document.getElementById("checkoutTiposTarjeta");
+    const pagoSeleccionado = document.querySelector('input[name="pago"]:checked')?.value;
+    if (tipoTarjeta) tipoTarjeta.hidden = pagoSeleccionado !== "Tarjeta al recibir";
+}
+
+function volverAEditarPedido() {
+    const form = document.getElementById("formCheckout");
+    if (!form) return;
+    delete form.dataset.pedidoEnRevision;
+    document.getElementById("checkoutResumenVista").hidden = true;
+    document.getElementById("checkoutFormularioVista").hidden = false;
 }
 
 function seleccionarTiendaProducto(indice, nombreTienda, precioTienda) {
@@ -8023,12 +8139,12 @@ function confirmarTiendaPickup() {
     select.value = String(tienda.id);
     if (esEnvio) {
         tiendaEnvioSeleccionadaId = String(tienda.id);
-        document.getElementById("checkoutTiendaEnvioNombre").textContent = tienda.nombre;
     } else {
         tiendaPickupSeleccionadaId = String(tienda.id);
         document.getElementById("checkoutTiendaTipo").textContent = tienda.categoria || "TIENDA NETO";
         document.getElementById("checkoutTiendaNombre").textContent = tienda.nombre;
         document.getElementById("checkoutTiendaDireccion").textContent = tienda.direccion;
+        if (!document.getElementById("checkoutHorarioPickup")?.hidden) actualizarDetalleHorarioPickup();
     }
     cerrarSelectorTiendasPedido();
 }

@@ -1976,6 +1976,15 @@ footer > strong {
     gap: 12px;
 }
 
+#checkoutFormularioVista {
+    display: grid;
+    gap: 12px;
+}
+
+#checkoutFormularioVista[hidden] {
+    display: none;
+}
+
 .checkout-modalidades {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2440,30 +2449,10 @@ footer > strong {
 
 .checkout-envio-tienda {
     display: grid;
-    grid-template-columns: 36px minmax(0, 1fr) 18px;
     align-items: center;
-    gap: 10px;
-    width: 100%;
     padding: 14px;
-    border: 0;
     background: #fff;
     color: var(--negro);
-    text-align: left;
-    cursor: pointer;
-}
-
-.checkout-envio-tienda:hover {
-    background: #fffaf6;
-}
-
-.checkout-envio-tienda-icono {
-    display: grid;
-    width: 34px;
-    aspect-ratio: 1;
-    place-items: center;
-    border-radius: 50%;
-    background: #fff0e8;
-    font-size: 17px;
 }
 
 .checkout-envio-tienda-texto {
@@ -2479,15 +2468,6 @@ footer > strong {
 .checkout-envio-tienda-texto small {
     color: #625d56;
     font-size: 10px;
-}
-
-.checkout-envio-tienda-texto > span {
-    overflow: hidden;
-    color: var(--naranja);
-    font-size: 10px;
-    font-weight: 800;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .checkout-horarios {
@@ -2615,6 +2595,170 @@ footer > strong {
     font-size: 18px;
 }
 
+.checkout-resumen-pedido {
+    display: grid;
+    gap: 12px;
+}
+
+.checkout-resumen-pedido[hidden] {
+    display: none;
+}
+
+.checkout-resumen-pedido h2,
+.checkout-resumen-cantidad {
+    margin: 0;
+}
+
+.checkout-resumen-productos {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.checkout-resumen-productos li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ded9d0;
+    color: #393632;
+    font-size: 12px;
+}
+
+.checkout-resumen-productos li strong {
+    flex-shrink: 0;
+    color: var(--negro);
+}
+
+.checkout-resumen-producto {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+}
+
+.checkout-resumen-producto-imagen {
+    display: grid;
+    flex: 0 0 56px;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid #ded9d0;
+    background: #f5f2ec;
+    font-size: 26px;
+}
+
+.checkout-resumen-producto-datos {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+}
+
+.checkout-resumen-producto-datos strong {
+    overflow-wrap: anywhere;
+    font-size: 12px;
+}
+
+.checkout-resumen-producto-datos small {
+    color: #625d56;
+    font-size: 10px;
+}
+
+.checkout-resumen-entrega {
+    display: grid;
+    gap: 4px;
+    padding: 12px;
+    background: #f5f2ec;
+    color: #625d56;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.checkout-resumen-entrega strong {
+    color: var(--negro);
+}
+
+.checkout-cliente-pago {
+    display: grid;
+    gap: 9px;
+    padding: 12px;
+    border: 1px solid #ded9d0;
+    border-radius: 6px;
+    color: var(--negro);
+    font-size: 12px;
+}
+
+.checkout-cliente-pago[hidden] {
+    display: none;
+}
+
+.checkout-cliente-pago > span {
+    display: grid;
+    gap: 2px;
+}
+
+.checkout-cliente-pago small {
+    color: #625d56;
+    font-size: 10px;
+}
+
+.checkout-resumen-pagos {
+    display: grid;
+    gap: 9px;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid #ded9d0;
+    border-radius: 6px;
+}
+
+.checkout-resumen-pagos legend {
+    padding: 0 5px;
+    color: var(--negro);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.checkout-resumen-pagos > label,
+.checkout-tipos-tarjeta label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #393632;
+    font-size: 12px;
+}
+
+.checkout-resumen-pagos input {
+    accent-color: var(--naranja);
+}
+
+.checkout-tipos-tarjeta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f5f2ec;
+    color: #625d56;
+    font-size: 11px;
+}
+
+.checkout-tipos-tarjeta[hidden] {
+    display: none;
+}
+
+.checkout-resumen-acciones {
+    display: grid;
+    grid-template-columns: minmax(100px, 0.6fr) 1fr;
+    gap: 10px;
+}
+
+.checkout-resumen-nota {
+    color: #625d56;
+    font-size: 11px;
+    line-height: 1.45;
+}
+
 .ticket-confirmado {
     display: grid;
     justify-items: center;
@@ -2669,6 +2813,10 @@ footer > strong {
 
 @media (max-width: 580px) {
     .checkout-campos-dos {
+        grid-template-columns: 1fr;
+    }
+
+    .checkout-resumen-acciones {
         grid-template-columns: 1fr;
     }
 }
