@@ -1,7 +1,8 @@
 <?php
 /* =====================================================
    MERCADO MEXA - API del catalogo de productos
-   Devuelve todo el catalogo agrupado por categoria, en JSON.
+   Devuelve todo el catalogo agrupado por categoria,
+   mas las tiendas disponibles, en JSON.
    Uso:  GET http://localhost/mercado-mexa/api/productos.php
    ===================================================== */
 
@@ -13,6 +14,7 @@ require_once __DIR__ . '/../config/bd.php';
 try {
     $bd = conectarBD();
     $catalogo = obtenerCatalogo($bd);
+    $tiendas = obtenerTiendas($bd);
 
     $total = 0;
     foreach ($catalogo as $categoria) {
@@ -23,6 +25,7 @@ try {
         'ok'         => true,
         'total'      => $total,
         'categorias' => $catalogo,
+        'tiendas'    => $tiendas,
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $error) {

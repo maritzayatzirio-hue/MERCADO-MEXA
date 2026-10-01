@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS productos (
         ON DELETE RESTRICT ON UPDATE CASCADE,
 
     INDEX idx_productos_categoria (categoria_id),
-    INDEX idx_productos_nombre (nombre),
+    UNIQUE KEY uq_productos_nombre (nombre),
     INDEX idx_productos_oferta (en_oferta)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

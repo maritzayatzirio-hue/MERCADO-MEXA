@@ -13,6 +13,7 @@ let marcadorUsuario = null;
 let marcadoresTiendas = [];
 let tiendas = [];
 let tiendasVisibles = 6;
+let tiendasDesdeAPI = null;
 
 let carrito = JSON.parse(localStorage.getItem("carritoMexa") || "[]");
 carrito = carrito.map(p => ({
@@ -2845,90 +2846,37 @@ async function crearTiendasReales(
         "BUSCANDO...";
 
 
+    /*
+     * Las tiendas salen de la base de datos (tabla tiendas), no de un
+     * servicio externo. El id que viaja al servidor es el slug, que es
+     * la misma clave que usa api/pedidos.php para resolver la tienda,
+     * asi el checkout no depende de que Overpass responda.
+     */
+
     try {
 
-        /*
-         * Consulta puntos de interés de OpenStreetMap alrededor del GPS.
-         * Así la búsqueda funciona desde Oaxaca, San Miguel el Grande o
-         * cualquier otra ciudad, sin depender de una lista fija.
-         */
-        const radioMetros = 80000;
-        const consulta = `
-            [out:json][timeout:25];
-            (
-                nwr["name"~"Neto", i](around:${radioMetros},${lat},${lng});
-                nwr["brand"~"Neto", i](around:${radioMetros},${lat},${lng});
-                nwr["operator"~"Neto", i](around:${radioMetros},${lat},${lng});
-            );
-            out center tags;
-        `;
+        if (!tiendasDesdeAPI) {
 
-        const respuesta = await fetch(
-            "https://overpass-api.de/api/interpreter",
-            {
-                method: "POST",
-                body: consulta
-            }
-        );
+            tiendasDesdeAPI = await API.tiendas();
 
-        if (!respuesta.ok) {
-            throw new Error(`Servicio de mapas: ${respuesta.status}`);
         }
 
-        const datos = await respuesta.json();
-
-        tiendas = (datos.elements || [])
-            .map(elemento => {
-
-                const tags = elemento.tags || {};
-                const latitud = elemento.lat ?? elemento.center?.lat;
-                const longitud = elemento.lon ?? elemento.center?.lon;
-
-                if (!Number.isFinite(latitud) || !Number.isFinite(longitud)) {
-                    return null;
-                }
-
-                return {
-                    id: `osm-${elemento.type}-${elemento.id}`,
-                    nombre: tags.name || tags.brand || "Tienda Neto",
-                    ciudad: tags["addr:city"] || tags["addr:town"] || tags["addr:village"] || "",
-                    direccion: construirDireccion(tags, latitud, longitud),
-                    lat: latitud,
-                    lng: longitud,
-                    horario: tags.opening_hours || "",
-                    distancia: calcularDistancia(lat, lng, latitud, longitud)
-                };
-            })
-            .filter(Boolean);
-
-
-        /*
-         * Algunas sucursales todavía no están registradas en OpenStreetMap.
-         * En ese caso usamos las sucursales verificadas de respaldo, pero
-         * únicamente si también están cerca de la posición GPS.
-         */
-        if (!tiendas.length) {
-
-            tiendas = tiendasNetoZona
-                .map(tienda => ({
-                    ...tienda,
-                    distancia: calcularDistancia(lat, lng, tienda.lat, tienda.lng)
-                }))
-                .filter(tienda => tienda.distancia <= 80);
-        }
+        tiendas = tiendasDesdeAPI.map(tienda => ({
+            ...tienda,
+            distancia: calcularDistancia(lat, lng, tienda.lat, tienda.lng)
+        }));
 
 
     } catch (error) {
 
-        console.warn("No se pudo consultar OpenStreetMap.", error);
+        console.warn("No se pudieron obtener las tiendas de la API.", error);
 
-        /* Respaldo para demostración sin conexión. */
-        tiendas = tiendasNetoZona
-            .map(tienda => ({
-                ...tienda,
-                distancia: calcularDistancia(lat, lng, tienda.lat, tienda.lng)
-            }))
-            .filter(tienda => tienda.distancia <= 80);
+        /* Respaldo sin conexion. Los ids de esta lista ya son los
+           slugs de la base de datos, asi que el checkout funciona. */
+        tiendas = tiendasNetoZona.map(tienda => ({
+            ...tienda,
+            distancia: calcularDistancia(lat, lng, tienda.lat, tienda.lng)
+        }));
     }
 
 
@@ -2979,8 +2927,8 @@ async function crearTiendasReales(
                 </strong>
 
                 <p>
-                    No encontramos tiendas registradas
-                    dentro de 80 km de tu ubicación.
+                    No hay tiendas disponibles
+                    en este momento.
                 </p>
 
             </div>
@@ -6083,6 +6031,8 @@ async function cargarCatalogoDesdeAPI() {
 
         const datos = await respuesta.json();
         if (!datos.ok || !datos.categorias) throw new Error(datos.error || "respuesta invalida");
+
+        if (Array.isArray(datos.tiendas)) tiendasDesdeAPI = datos.tiendas;
 
         categoriasDesdeAPI = datos.categorias.map(categoria => ({
             nombre: categoria.nombre,

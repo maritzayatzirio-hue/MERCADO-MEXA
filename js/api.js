@@ -38,6 +38,14 @@ const API = {
         return datos.categorias;
     },
 
+    /* Tiendas desde la base de datos.
+       El id de cada tienda es su slug, la misma clave que
+       espera el servidor al confirmar un pedido. */
+    async tiendas() {
+        const datos = await this.pedir("productos.php");
+        return datos.tiendas || [];
+    },
+
     /* Consultar la sesion actual (GET) */
     async sesion() {
         return this.pedir("auth.php");

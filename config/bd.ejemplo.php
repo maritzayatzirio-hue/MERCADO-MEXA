@@ -82,6 +82,31 @@ function obtenerCatalogo(PDO $bd) {
     return array_values($catalogo);
 }
 
+/* Devuelve las tiendas activas de la base de datos.
+   El "id" que se devuelve es el slug, porque es la clave por la que
+   api/pedidos.php resuelve la tienda al confirmar un pedido. */
+function obtenerTiendas(PDO $bd) {
+    $sql = "SELECT slug, nombre, ciudad, direccion, lat, lng
+            FROM tiendas
+            WHERE activo = 1
+            ORDER BY nombre";
+
+    $tiendas = [];
+
+    foreach ($bd->query($sql)->fetchAll() as $fila) {
+        $tiendas[] = [
+            'id'        => $fila['slug'],
+            'nombre'    => $fila['nombre'],
+            'ciudad'    => $fila['ciudad'],
+            'direccion' => $fila['direccion'],
+            'lat'       => (float) $fila['lat'],
+            'lng'       => (float) $fila['lng'],
+        ];
+    }
+
+    return $tiendas;
+}
+
 /* Devuelve los datos publicos de un usuario (sin password_hash) */
 function usuarioPublico(array $fila) {
     return [
