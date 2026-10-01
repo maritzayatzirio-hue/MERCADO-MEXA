@@ -937,6 +937,11 @@ function inicializarFormularioLogin() {
                     "👋"
                 );
 
+                /* El carrito ahora vive en MySQL */
+                if (typeof sincronizarCarritoDesdeAPI === "function") {
+                    sincronizarCarritoDesdeAPI();
+                }
+
                 mostrarCuentaPorRol(cuenta);
                 modalCuenta?.classList.add("activa");
             } catch (error) {
@@ -1144,6 +1149,10 @@ async function arrancarCuentas() {
                 `Hola de nuevo, ${sesion.nombre}.`,
                 "👋"
             );
+            /* Al entrar, el carrito baja de MySQL */
+            if (typeof sincronizarCarritoDesdeAPI === "function") {
+                sincronizarCarritoDesdeAPI();
+            }
         }
     }
 }

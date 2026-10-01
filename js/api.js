@@ -77,9 +77,46 @@ const API = {
         });
     },
 
-    /* Carrito del usuario */
+    /* ---- Carrito (guardado en MySQL) ---- */
+
+    /* Descarga el carrito del servidor */
     async carrito() {
-        return this.pedir("carrito.php");
+        const datos = await this.pedir("carrito.php");
+        return datos.carrito;
+    },
+
+    /* Agrega un producto. El precio lo pone el servidor. */
+    async carritoAgregar(nombre, cantidad = 1) {
+        const datos = await this.pedir("carrito.php", {
+            method: "POST",
+            body: JSON.stringify({ accion: "agregar", nombre, cantidad })
+        });
+        return datos.carrito;
+    },
+
+    /* Cambia la cantidad. Con 0 se elimina. */
+    async carritoCantidad(nombre, cantidad) {
+        const datos = await this.pedir("carrito.php", {
+            method: "POST",
+            body: JSON.stringify({ accion: "cantidad", nombre, cantidad })
+        });
+        return datos.carrito;
+    },
+
+    async carritoEliminar(nombre) {
+        const datos = await this.pedir("carrito.php", {
+            method: "POST",
+            body: JSON.stringify({ accion: "eliminar", nombre })
+        });
+        return datos.carrito;
+    },
+
+    async carritoVaciar() {
+        const datos = await this.pedir("carrito.php", {
+            method: "POST",
+            body: JSON.stringify({ accion: "vaciar" })
+        });
+        return datos.carrito;
     },
 
     /* Pedidos del usuario */

@@ -43,6 +43,8 @@ function iniciarAplicacion() {
     cargarCatalogoDesdeAPI().then(catalogo => {
         if (catalogo) refrescarCatalogoEnPantalla();
     });
+    /* Si hay sesion, el carrito baja de MySQL */
+    sincronizarCarritoDesdeAPI();
 }
 
 /* Vuelve a pintar el catalogo ya con los datos de la base de datos */
@@ -3746,8 +3748,11 @@ function confirmarPedidoLista(evento) {
 
     const tipoEntrega = modalidad === "pickup" ? "Pickup en tienda" : "Envío a domicilio";
 
+    /* El pedido se acaba de confirmar: el carrito se vacia
+       aqui y tambien en MySQL. */
     carrito = [];
     guardar();
+    vaciarCarritoEnAPI();
 
     const contenido = document.getElementById("contenidoCheckout");
     contenido.innerHTML = `
@@ -6822,10 +6827,14 @@ function agregarAlCarrito(
     }
 
     guardar();
+
+    /* Si hay sesion, se guarda tambien en MySQL.
+       Si el producto ya estaba, la BD suma la cantidad. */
+    agregarProductoAlCarrito(nombre, 1);
 }
 
-
 function guardar() {
+
 
     localStorage.setItem(
         "carritoMexa",
@@ -6837,6 +6846,122 @@ function guardar() {
 
     renderLista();
 
+}
+
+
+/* =========================
+   CARRITO CONECTADO A LA BD
+   Si hay sesion, el carrito se guarda tambien en MySQL.
+   Si no hay servidor o no hay sesion, sigue con localStorage.
+========================= */
+
+/* El carrito local se vacia o no segun haya sesion */
+function haySesionActiva() {
+    try {
+        return Boolean(obtenerSesionActual());
+    } catch (e) {
+        return false;
+    }
+}
+
+/* Convierte la respuesta del servidor al formato que usa el JS.
+   La BD manda precio/subtotal ya calculados. */
+function carritoDesdeAPI(datos) {
+    return (datos.items || []).map(item => ({
+        id: String(item.producto_id),
+        nombre: item.nombre,
+        precio: Number(item.precio),
+        precioRegular: Number(item.precioRegular),
+        cantidad: Number(item.cantidad),
+        subtotal: Number(item.subtotal),
+        caducidad: item.caducidad || "Consumo habitual",
+        icono: item.icono || "🛒",
+        presentacion: item.presentacion || "",
+        categoriaLista: item.categoriaLista || "",
+        enOferta: false,
+        etiquetaOferta: "",
+        comparativaTiendas: generarComparativaTiendas(Number(item.precio), item.nombre),
+        comprado: Boolean(item.comprado)
+    }));
+}
+
+/* Al cargar la pagina, si hay sesion, se pide el carrito al servidor */
+async function sincronizarCarritoDesdeAPI() {
+    if (!haySesionActiva() || typeof API === "undefined") return;
+    try {
+        const datos = await API.carrito();
+        carrito = carritoDesdeAPI(datos);
+        localStorage.setItem("carritoMexa", JSON.stringify(carrito));
+        actualizarContador();
+        renderLista();
+    } catch (e) {
+        // Si falla, el carrito local sigue funcionando
+    }
+}
+
+/* Agrega un producto y lo refleja en la BD */
+async function agregarProductoAlCarrito(nombre, cantidad = 1) {
+    if (!haySesionActiva() || typeof API === "undefined") return;
+    try {
+        const datos = await API.carritoAgregar(nombre, cantidad);
+        carrito = carritoDesdeAPI(datos);
+        localStorage.setItem("carritoMexa", JSON.stringify(carrito));
+        actualizarContador();
+        renderLista();
+    } catch (e) {
+        mostrarNotificacionCarrito("No se pudo guardar en la base de datos", e.message);
+    }
+}
+
+/* Cambia la cantidad de un producto */
+async function cambiarCantidadEnAPI(nombre, cantidad) {
+    if (!haySesionActiva() || typeof API === "undefined") return;
+    try {
+        const datos = await API.carritoCantidad(nombre, cantidad);
+        carrito = carritoDesdeAPI(datos);
+        localStorage.setItem("carritoMexa", JSON.stringify(carrito));
+        actualizarContador();
+        renderLista();
+    } catch (e) {
+        mostrarNotificacionCarrito("No se pudo actualizar", e.message);
+    }
+}
+
+/* Elimina un producto */
+async function eliminarProductoDeAPI(nombre) {
+    if (!haySesionActiva() || typeof API === "undefined") return;
+    try {
+        const datos = await API.carritoEliminar(nombre);
+        carrito = carritoDesdeAPI(datos);
+        localStorage.setItem("carritoMexa", JSON.stringify(carrito));
+        actualizarContador();
+        renderLista();
+    } catch (e) {
+        mostrarNotificacionCarrito("No se pudo eliminar", e.message);
+    }
+}
+
+/* Vacia el carrito */
+async function vaciarCarritoEnAPI() {
+    if (!haySesionActiva() || typeof API === "undefined") return;
+    try {
+        const datos = await API.carritoVaciar();
+        carrito = carritoDesdeAPI(datos);
+        localStorage.setItem("carritoMexa", JSON.stringify(carrito));
+        actualizarContador();
+        renderLista();
+    } catch (e) {
+        mostrarNotificacionCarrito("No se pudo vaciar", e.message);
+    }
+}
+
+/* Aviso pequeno si falla una operacion del carrito */
+function mostrarNotificacionCarrito(titulo, mensaje) {
+    if (typeof mostrarNotificacionCuenta === "function") {
+        mostrarNotificacionCuenta(titulo, mensaje, "⚠️");
+    } else {
+        console.warn(`[carrito] ${titulo}: ${mensaje}`);
+    }
 }
 
 
@@ -7030,6 +7155,13 @@ function cambiarCantidad(
     carrito[i].cantidad += d;
 
 
+    /* Se guarda el nombre antes de tocar el arreglo,
+       porque despues el indice puede haber cambiado. */
+    const nombreProducto = carrito[i].nombre;
+
+    carrito[i].cantidad += d;
+
+
     if (
         carrito[i].cantidad <= 0
     ) {
@@ -7041,14 +7173,27 @@ function cambiarCantidad(
 
     guardar();
 
+    /* Si hay sesion, se refleja en MySQL.
+       Con cantidad 0 el servidor lo elimina. */
+    cambiarCantidadEnAPI(
+        nombreProducto,
+        Math.max(0, carrito.find(p => p.nombre === nombreProducto)?.cantidad || 0)
+    );
+
 }
 
 
 function eliminarDeLista(i) {
 
+    const nombreProducto = carrito[i]?.nombre;
+
     carrito.splice(i, 1);
 
     guardar();
+
+    if (nombreProducto) {
+        eliminarProductoDeAPI(nombreProducto);
+    }
 
 }
 
@@ -7059,6 +7204,8 @@ function vaciarLista() {
     detallesTiendaAbiertos = {};
 
     guardar();
+
+    vaciarCarritoEnAPI();
 
 }
 
