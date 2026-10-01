@@ -185,6 +185,90 @@ CREATE TABLE IF NOT EXISTS pedido_items (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+-- ============================================================
+--  8. CARRITO
+--  Articulos pendientes de compra del usuario
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS carrito (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id      INT           NOT NULL,
+    producto_id     INT           NOT NULL,
+    cantidad        SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    precio_unitario DECIMAL(10,2) NOT NULL,
+    comprado        TINYINT(1)    NOT NULL DEFAULT 0,
+    agregado_en     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    -- un producto solo aparece una vez en el carrito
+    UNIQUE KEY uq_carrito_usuario_producto (usuario_id, producto_id),
+
+    CONSTRAINT fk_carrito_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    CONSTRAINT fk_carrito_producto
+        FOREIGN KEY (producto_id) REFERENCES productos(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    INDEX idx_carrito_producto (producto_id),
+    INDEX idx_carrito_no_comprado (comprado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+--  9. FAVORITOS
+--  Productos marcados con corazon por el usuario
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS favoritos (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id   INT      NOT NULL,
+    producto_id  INT      NOT NULL,
+    creado_en    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    -- no se puede marcar dos veces el mismo producto
+    UNIQUE KEY uq_favorito_usuario_producto (usuario_id, producto_id),
+
+    CONSTRAINT fk_favoritos_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    CONSTRAINT fk_favoritos_producto
+        FOREIGN KEY (producto_id) REFERENCES productos(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    INDEX idx_favoritos_producto (producto_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+--  10. ENTREGAS
+--  Historial de entregas por chofer
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS entregas (
+    id                 INT AUTO_INCREMENT PRIMARY KEY,
+    pedido_id          INT           NOT NULL,
+    chofer_id          INT           NOT NULL,
+    codigo_entrega     CHAR(6)       NOT NULL,
+    entregado_en       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    tiempo_entrega_min INT UNSIGNED  NULL,
+
+    -- un pedido solo genera una entrega
+    UNIQUE KEY uq_entrega_pedido (pedido_id),
+
+    CONSTRAINT fk_entregas_pedido
+        FOREIGN KEY (pedido_id) REFERENCES pedidos(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    CONSTRAINT fk_entregas_chofer
+        FOREIGN KEY (chofer_id) REFERENCES usuarios(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    INDEX idx_entregas_chofer (chofer_id, entregado_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 -- ############################################################
 --  ##  DATOS DE EJEMPLO                                    ##
 -- ############################################################
@@ -589,6 +673,27 @@ VALUES
     (3, 3, 'Aceite Vegetal 1L', '🫗', 1, 48.00, 48.00);
 
 
+-- ---------- ENTREGAS REGISTRADAS ----------
+-- solo los pedidos que ya estan en estado 'entregado'
+INSERT INTO entregas (pedido_id, chofer_id, codigo_entrega, entregado_en, tiempo_entrega_min)
+VALUES
+    (3, 2, '237846', '2026-09-30 09:52:00', 42);
+
+
+-- ---------- FAVORITOS DE DEMOSTRACION ----------
+INSERT INTO favoritos (usuario_id, producto_id) VALUES
+    (1, 14), (1, 24), (1, 1), (1, 40);
+
+
+-- ---------- CARRITO DE DEMOSTRACION ----------
+INSERT INTO carrito (usuario_id, producto_id, cantidad, precio_unitario, comprado) VALUES
+    (1, 14, 2, 26.00, 0),
+    (1, 40, 1, 42.00, 0),
+    (1, 27, 1, 35.00, 0);
+
+
 -- ============================================================
---  FIN  -  65 productos | 4 tiendas | 5 categorias
+--  FIN  -  10 tablas | 65 productos | 4 tiendas | 5 categorias
+--  usuarios: 5 | pedidos: 3 | items: 9 | precios: 260
+--  carrito: 3 | favoritos: 4 | entregas: 1
 -- ============================================================
