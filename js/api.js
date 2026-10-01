@@ -119,8 +119,43 @@ const API = {
         return datos.carrito;
     },
 
-    /* Pedidos del usuario */
+    /* ---- Pedidos (guardados en MySQL) ---- */
+
+    /* Lista los pedidos del usuario */
     async pedidos() {
-        return this.pedir("pedidos.php");
+        const datos = await this.pedir("pedidos.php");
+        return datos.pedidos;
+    },
+
+    /* Confirma un pedido.
+       Los productos y el total los saca el servidor del carrito,
+       por eso aqui solo van los datos de entrega. */
+    async pedidoCrear(datos) {
+        const r = await this.pedir("pedidos.php", {
+            method: "POST",
+            body: JSON.stringify({
+                accion: "crear",
+                tienda: datos.tienda,
+                modalidad: datos.modalidad,
+                direccion: datos.direccion,
+                referencias: datos.referencias || "",
+                metodoPago: datos.metodoPago || "Efectivo al recibir"
+            })
+        });
+        return r.pedido;
+    },
+
+    /* ---- Favoritos (guardados en MySQL) ---- */
+
+    async favoritos() {
+        const datos = await this.pedir("favoritos.php");
+        return datos.favoritos;
+    },
+
+    async favoritoAlternar(nombre) {
+        return this.pedir("favoritos.php", {
+            method: "POST",
+            body: JSON.stringify({ accion: "alternar", nombre })
+        });
     }
 };

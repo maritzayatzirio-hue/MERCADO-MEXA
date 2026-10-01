@@ -942,6 +942,14 @@ function inicializarFormularioLogin() {
                     sincronizarCarritoDesdeAPI();
                 }
 
+                /* Y los pedidos y favoritos tambien */
+                if (typeof sincronizarPedidosDesdeAPI === "function") {
+                    sincronizarPedidosDesdeAPI();
+                }
+                if (typeof sincronizarFavoritosDesdeAPI === "function") {
+                    sincronizarFavoritosDesdeAPI();
+                }
+
                 mostrarCuentaPorRol(cuenta);
                 modalCuenta?.classList.add("activa");
             } catch (error) {
@@ -1152,6 +1160,13 @@ async function arrancarCuentas() {
             /* Al entrar, el carrito baja de MySQL */
             if (typeof sincronizarCarritoDesdeAPI === "function") {
                 sincronizarCarritoDesdeAPI();
+            }
+            /* Y tambien los pedidos y favoritos */
+            if (typeof sincronizarPedidosDesdeAPI === "function") {
+                sincronizarPedidosDesdeAPI();
+            }
+            if (typeof sincronizarFavoritosDesdeAPI === "function") {
+                sincronizarFavoritosDesdeAPI();
             }
         }
     }

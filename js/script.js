@@ -45,6 +45,9 @@ function iniciarAplicacion() {
     });
     /* Si hay sesion, el carrito baja de MySQL */
     sincronizarCarritoDesdeAPI();
+    /* Y tambien los pedidos y los favoritos */
+    sincronizarPedidosDesdeAPI();
+    sincronizarFavoritosDesdeAPI();
 }
 
 /* Vuelve a pintar el catalogo ya con los datos de la base de datos */
@@ -3616,7 +3619,7 @@ function actualizarInformacionClienteCheckout() {
     panel.hidden = false;
 }
 
-function confirmarPedidoLista(evento) {
+async function confirmarPedidoLista(evento) {
     evento.preventDefault();
 
     const form = evento.currentTarget;
@@ -3710,6 +3713,67 @@ function confirmarPedidoLista(evento) {
     const fecha = new Date();
     const metodoPagoSeleccionado = String(datos.get("pago") || "Efectivo al recibir");
     const tipoTarjetaSeleccionado = String(datos.get("tipoTarjeta") || "Débito");
+    const metodoPagoFinal = metodoPagoSeleccionado === "Tarjeta al recibir"
+        ? `Tarjeta de ${tipoTarjetaSeleccionado} al recibir`
+        : metodoPagoSeleccionado;
+
+    /* =====================================================
+       CON BASE DE DATOS: el pedido se confirma en MySQL.
+       El servidor lee los productos y el total del carrito,
+       asi que aqui NO se mandan precios ni cantidades.
+       ===================================================== */
+    if (haySesionActiva() && typeof API !== "undefined") {
+        try {
+            const pedidoGuardado = await API.pedidoCrear({
+                tienda: tiendaPedido.id,
+                modalidad,
+                direccion,
+                referencias,
+                metodoPago: metodoPagoFinal
+            });
+
+            /* La respuesta trae el folio y el codigo que dio el servidor */
+            const folio = pedidoGuardado.folio;
+            const codigoEntrega = pedidoGuardado.codigoEntrega;
+            const totalReal = Number(pedidoGuardado.total);
+
+            /* El servidor ya vacio el carrito en la BD */
+            carrito = [];
+            guardar();
+            sincronizarPedidosDesdeAPI();
+
+            const tipoEntrega = modalidad === "pickup" ? "Pickup en tienda" : "Envío a domicilio";
+            const contenido = document.getElementById("contenidoCheckout");
+            contenido.innerHTML = `
+                <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="document.getElementById('modalCheckout').classList.remove('activa')">×</button>
+                <div class="ticket-confirmado">
+                    <span class="section-label">PEDIDO REGISTRADO</span>
+                    <h2>Pedido confirmado</h2>
+                    <p>Pedido <strong>${escapeHTML(folio)}</strong> · Total <strong>${formatearPrecio(totalReal)}</strong></p>
+                    <p><strong>${tipoEntrega}</strong> · ${escapeHTML(pedidoGuardado.tienda || tiendaPedido.nombre)}</p>
+                    <p>Forma de pago: <strong>${escapeHTML(metodoPagoFinal)}</strong></p>
+                    <div class="ticket-codigo">
+                        <span>CÓDIGO PARA EL REPARTIDOR</span>
+                        <strong>${escapeHTML(codigoEntrega)}</strong>
+                    </div>
+                    <p>Comparte este código con el repartidor al recibir tu pedido.</p>
+                    <button class="btn-naranja grande" type="button" onclick="document.getElementById('modalCheckout').classList.remove('activa')">Cerrar</button>
+                    <small>Tu pedido quedó guardado en el sistema y la tienda ya lo está preparando.</small>
+                </div>
+            `;
+
+            mostrarNotificacionCuenta("Pedido confirmado", `Folio ${folio}. Guarda tu código de entrega: ${codigoEntrega}`);
+            return;
+
+        } catch (error) {
+            mostrarNotificacionCuenta("No se pudo confirmar el pedido", error.message, "❌");
+            return;
+        }
+    }
+
+    /* =====================================================
+        SIN SERVIDOR: se guarda en el navegador como antes
+    ===================================================== */
     const codigoEntrega = String(Math.floor(100000 + Math.random() * 900000));
     const productos = carrito.map(item => `${item.nombre} (${item.cantidad || 1})`).join(", ");
     const pedido = {
@@ -3725,9 +3789,7 @@ function confirmarPedidoLista(evento) {
         total,
         productos,
         items: carrito.map(item => ({ nombre: item.nombre, cantidad: item.cantidad || 1, precio: item.precio })),
-        metodoPago: metodoPagoSeleccionado === "Tarjeta al recibir"
-            ? `Tarjeta de ${tipoTarjetaSeleccionado} al recibir`
-            : metodoPagoSeleccionado,
+        metodoPago: metodoPagoFinal,
         codigoEntrega,
         estado: "pendiente",
         fecha: fecha.toLocaleString("es-MX"),
@@ -5492,6 +5554,9 @@ function toggleFavorito(
         )
     );
 
+    /* Si hay sesion, el mismo cambio se guarda en MySQL */
+    alternarFavoritoEnAPI(nombre);
+
     const modalFav = document.getElementById("modalFavoritos");
     if (modalFav && modalFav.classList.contains("activa")) {
         renderFavoritos();
@@ -5750,10 +5815,26 @@ function agregarTodosFavoritos() {
     mostrarNotificacionCatalogo("🛒", "¡AGREGADOS A TU LISTA!", `${prods.length} productos fueron agregados a tu lista.`);
 }
 
-function vaciarFavoritos() {
+async function vaciarFavoritos() {
+    const actuales = obtenerFavoritos();
     localStorage.setItem("favoritosMexa", JSON.stringify([]));
     renderFavoritos();
     mostrarNotificacionCatalogo("🗑️", "FAVORITOS VACIADOS", "Se eliminaron todos los productos de favoritos.");
+
+    /* Si hay sesion, se quitan tambien de MySQL */
+    if (haySesionActiva() && typeof API !== "undefined") {
+        try {
+            for (const nombre of actuales) {
+                await API.pedir("favoritos.php", {
+                    method: "POST",
+                    body: JSON.stringify({ accion: "quitar", nombre })
+                });
+            }
+            sincronizarFavoritosDesdeAPI();
+        } catch (e) {
+            mostrarNotificacionCarrito("No se pudieron vaciar los favoritos", e.message);
+        }
+    }
 }
 
 
@@ -6961,6 +7042,100 @@ function mostrarNotificacionCarrito(titulo, mensaje) {
         mostrarNotificacionCuenta(titulo, mensaje, "⚠️");
     } else {
         console.warn(`[carrito] ${titulo}: ${mensaje}`);
+    }
+}
+
+/* =========================
+   PEDIDOS CONECTADOS A LA BD
+========================= */
+
+/* Convierte la respuesta del servidor al formato que usa el JS */
+function pedidosDesdeAPI(lista) {
+    return (lista || []).map(p => ({
+        id: p.folio,
+        pedidoId: p.id,
+        usuarioId: null,
+        cliente: p.cliente,
+        telefono: p.telefono,
+        direccion: p.direccion,
+        referencias: p.referencias || "",
+        modalidad: p.modalidad,
+        tienda: p.tienda || "",
+        tiendaDireccion: "",
+        total: Number(p.total),
+        productos: (p.items || []).map(i => `${i.nombre} (${i.cantidad})`).join(", "),
+        items: (p.items || []).map(i => ({
+            nombre: i.nombre,
+            cantidad: i.cantidad,
+            precio: Number(i.precio)
+        })),
+        metodoPago: p.metodoPago,
+        codigoEntrega: p.codigoEntrega,
+        estado: p.estado,
+        fecha: p.fecha,
+        chofer: p.chofer || "Por asignar"
+    }));
+}
+
+/* Al cargar la pagina, si hay sesion, se piden los pedidos al servidor */
+async function sincronizarPedidosDesdeAPI() {
+    if (!haySesionActiva() || typeof API === "undefined") return;
+    try {
+        const lista = await API.pedidos();
+        guardarPedidosMexa(pedidosDesdeAPI(lista));
+    } catch (e) {
+        // Si falla, los pedidos del navegador siguen visibles
+    }
+}
+
+/* =========================
+   FAVORITOS CONECTADOS A LA BD
+========================= */
+
+/* La lista de favoritos se guarda como arreglo de nombres,
+   que es como ya la usaba el JS. */
+function guardarFavoritosDesdeAPI(favoritos) {
+    localStorage.setItem(
+        "favoritosMexa",
+        JSON.stringify((favoritos || []).map(f => f.nombre))
+    );
+    favoritosMexa = (favoritos || []).map(f => f.nombre);
+    pintarCorazonesFavoritos();
+}
+
+async function sincronizarFavoritosDesdeAPI() {
+    if (!haySesionActiva() || typeof API === "undefined") return;
+    try {
+        const lista = await API.favoritos();
+        guardarFavoritosDesdeAPI(lista);
+    } catch (e) {
+        // Si falla, los favoritos del navegador siguen
+    }
+}
+
+/* Marca los corazones del catalogo segun la lista actual.
+   El boton lleva el nombre dentro del onclick, asi que se saca de ahi. */
+function pintarCorazonesFavoritos() {
+    document.querySelectorAll(".producto-favorito").forEach(boton => {
+        const coincidencia = (boton.getAttribute("onclick") || "").match(/toggleFavorito\('(.*?)'/);
+        if (!coincidencia) return;
+
+        const nombre = coincidencia[1].replace(/\\'/g, "'");
+        const activo = favoritosMexa.includes(nombre);
+
+        boton.classList.toggle("favorito-activo", activo);
+        boton.textContent = activo ? "♥" : "♡";
+    });
+}
+
+/* Refleja en la BD el cambio de un favorito */
+async function alternarFavoritoEnAPI(nombre) {
+    if (!haySesionActiva() || typeof API === "undefined") return;
+    try {
+        const datos = await API.favoritoAlternar(nombre);
+        guardarFavoritosDesdeAPI(datos.favoritos);
+    } catch (e) {
+        mostrarNotificacionCarrito("No se pudo guardar el favorito", e.message);
     }
 }
 
