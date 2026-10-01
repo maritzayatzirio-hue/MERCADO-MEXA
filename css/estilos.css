@@ -511,6 +511,8 @@ button {
 
     max-width: 520px;
 
+    position: relative;
+
     height: 44px;
 
     display: flex;
@@ -555,6 +557,58 @@ button {
     font-size: 11px;
 
     font-weight: 600;
+}
+
+.buscador-resultados {
+    display: none;
+
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    padding: 6px;
+    border: 1px solid #ded8cf;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(20, 24, 28, .14);
+}
+
+.buscador-resultados.visible {
+    display: grid;
+    gap: 2px;
+}
+
+.buscador-resultado {
+    width: 100%;
+    padding: 9px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #20252a;
+    text-align: left;
+    cursor: pointer;
+}
+
+.buscador-resultado:hover,
+.buscador-resultado:focus-visible {
+    outline: 0;
+    background: #fff2ec;
+}
+
+.buscador-resultado strong,
+.buscador-resultado small {
+    display: block;
+}
+
+.buscador-resultado strong {
+    font-size: 12px;
+}
+
+.buscador-resultado small {
+    margin-top: 2px;
+    color: #77736d;
+    font-size: 10px;
 }
 
 /* Ubicación */
