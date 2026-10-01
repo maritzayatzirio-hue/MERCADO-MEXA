@@ -152,7 +152,44 @@ function prepararEventos() {
 
     document
         .getElementById("botonLista")
-        ?.addEventListener("click", () => abrirLista(true));
+        ?.addEventListener("click", () => {
+
+            const tiendaSeleccionada =
+                tiendaPickupTemporalId
+                    ? tiendas.find(
+                        t =>
+                            String(t.id) ===
+                            String(tiendaPickupTemporalId)
+                    )
+                    : tiendas[0];
+
+            if (!tiendaSeleccionada) {
+
+                mostrarNotificacionCuenta(
+                    "Sin tiendas",
+                    "No hay tiendas disponibles para mostrar la ruta.",
+                    "⚠️"
+                );
+
+                return;
+
+            }
+
+            if (!ubicacionUsuario) {
+
+                mostrarNotificacionCuenta(
+                    "Ubicación no disponible",
+                    "Activa tu ubicación para ver la ruta del repartidor.",
+                    "⌖"
+                );
+
+                return;
+
+            }
+
+            verRuta(String(tiendaSeleccionada.id));
+
+        });
 
     document
         .getElementById("navLista")
