@@ -292,14 +292,25 @@ INSERT INTO tiendas (id, slug, nombre, ciudad, direccion, lat, lng) VALUES
 
 
 -- ---------- USUARIOS ----------
--- password_hash = SHA-256 del texto plano (así lo genera js/roles.js)
--- En PHP usa password_hash() / password_verify() en su lugar.
+-- password_hash = password_hash() de PHP (bcrypt), NO es SHA-256.
+-- Se valida con password_verify($clave, $usuario['password_hash']).
+--
+-- Para crear usuarios nuevos, NUNCA escribas el hash a mano.
+-- Genera el hash en PHP y luego inserta:
+--     password_hash('MiClave123', PASSWORD_DEFAULT)
+--
+-- Cuentas de demostracion:
+--     usuario@mexamexa.com    -> Usuario123
+--     chofer@mexamexa.com     -> Chofer123
+--     admin@mexamexa.com      -> Admin123
+--     juanpablo@mexamexa.com  -> Cliente123
+--     mariaelena@mexamexa.com -> Cliente123
 INSERT INTO usuarios (id, nombre, apellidos, correo, telefono, password_hash, rol, estado_chofer, entregas, cuenta_demo) VALUES
-    (1, 'Alexandra', 'Gómez', 'usuario@mexamexa.com', '9511234567', '66d4fca6f91a71a033d2369ad7a302bf83b925364cb73bcc9677e378c4685437', 'usuario', 'disponible', 0, 1),
-    (2, 'Carlos', 'Ramírez', 'chofer@mexamexa.com', '9512345678', '809ba6d52427ea7cb1bddbc6318b13f820021ff37f5586c6e3e10817b7e29ed9', 'chofer', 'disponible', 14, 1),
-    (3, 'Administrador', 'Mercado Mexa', 'admin@mexamexa.com', '9513456789', '3b612c75a7b5048a435fb6ec81e52ff92d6d795a8b5a9c17070f6a63c97a53b2', 'admin', 'disponible', 0, 1),
-    (4, 'Juan Pablo', 'Reyes', 'juanpablo@mexamexa.com', '9519876543', '34e422278ea745b5d87ba6592f0ea3fe32a2eb7593f5960ac72d7094fb121f3d', 'usuario', 'disponible', 0, 0),
-    (5, 'María Elena', 'Castro', 'mariaelena@mexamexa.com', '9514455667', '34e422278ea745b5d87ba6592f0ea3fe32a2eb7593f5960ac72d7094fb121f3d', 'usuario', 'disponible', 0, 0);
+    (1, 'Alexandra', 'Gómez', 'usuario@mexamexa.com', '9511234567', '$2y$10$6eSevbBjHVggblfhKgaUAeg8IEnDuR.hvNI3cAf6.4nlU4fPm82D2', 'usuario', 'disponible', 0, 1),
+    (2, 'Carlos', 'Ramírez', 'chofer@mexamexa.com', '9512345678', '$2y$10$ZiTm6tJbK1tSMpkbG2FIyu6BohfzG2oJGRtCzqYSjY4fsFrQSH88O', 'chofer', 'disponible', 14, 1),
+    (3, 'Administrador', 'Mercado Mexa', 'admin@mexamexa.com', '9513456789', '$2y$10$GvsOR.q6EIKolZK2XQwwvOPmfknD2leebU9Fyl7SVnpSVPm59pmf6', 'admin', 'disponible', 0, 1),
+    (4, 'Juan Pablo', 'Reyes', 'juanpablo@mexamexa.com', '9519876543', '$2y$10$xrribgb1Ma8qI9sonEwoV.T97qe4jwVjpUd8CSAtVV2VsswtKFPPO', 'usuario', 'disponible', 0, 0),
+    (5, 'María Elena', 'Castro', 'mariaelena@mexamexa.com', '9514455667', '$2y$10$PANKfMWB2iIs6Zkh7Yv1h.IC.tkCUDOfg0OpYL6K.396BI3u2KnYa', 'usuario', 'disponible', 0, 0);
 
 
 -- ---------- PRODUCTOS (65) ----------

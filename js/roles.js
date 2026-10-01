@@ -615,7 +615,13 @@ function mostrarCuentaPorRol(sesion) {
         modalCuenta?.classList.remove("activa");
     });
 
-    document.getElementById("btnCerrarSesionMexa")?.addEventListener("click", () => {
+    document.getElementById("btnCerrarSesionMexa")?.addEventListener("click", async () => {
+        // Si hay backend, la cookie de sesion PHP tambien se cierra
+        if (typeof API !== "undefined") {
+            try {
+                await API.logout();
+            } catch (e) {}
+        }
         cerrarSesionMexa();
         restaurarCuentaInicial();
         modalCuenta?.classList.remove("activa");
@@ -772,6 +778,35 @@ function inicializarFormularioRegistro() {
             return;
         }
 
+        // --- CON BASE DE DATOS ---
+        if (await backendDisponible()) {
+            try {
+                const datos = await API.registro({
+                    nombre, apellidos, correo, telefono, password
+                });
+                const cuenta = usuarioDesdeAPI(datos.usuario);
+
+                formRegistro.reset();
+                guardarSesion(cuenta);
+                actualizarBotonCuenta();
+                modalRegistro?.classList.remove("activa");
+
+                mostrarNotificacionCuenta(
+                    "¡Cuenta creada con éxito!",
+                    `Bienvenido(a) ${cuenta.nombre}. Tu cuenta quedó guardada de forma segura.`,
+                    "🎉"
+                );
+
+                const modalCuenta = document.getElementById("modalCuenta");
+                mostrarCuentaPorRol(cuenta);
+                modalCuenta?.classList.add("activa");
+            } catch (error) {
+                mostrarNotificacionCuenta("No se pudo crear la cuenta", error.message, "❌");
+            }
+            return;
+        }
+
+        // --- RESPALDO LOCAL (sin servidor) ---
         const cuentas = obtenerCuentas();
         const existe = cuentas.some(c => normalizarCorreo(c.correo) === correo);
         if (existe) {
@@ -818,8 +853,55 @@ function inicializarFormularioRegistro() {
 }
 
 /* =====================================================
-   LOGIN
-===================================================== */
+   CONEXION CON LA API
+   Si hay servidor (api/auth.php), la cuenta se valida
+   contra MySQL. Si no hay, se usa el respaldo local.
+   ===================================================== */
+
+/* Resultado de la comprobacion, para no repetirla */
+let backendActivo = null;
+
+async function backendDisponible() {
+    if (typeof API === "undefined") return false;
+    if (backendActivo !== null) return backendActivo;
+    try {
+        const datos = await API.sesion();
+        backendActivo = datos.ok === true;
+    } catch (e) {
+        backendActivo = false;
+    }
+    return backendActivo;
+}
+
+/* Adapta el usuario de la API al formato que usa el resto del codigo */
+function usuarioDesdeAPI(api) {
+    return {
+        id: String(api.id),
+        nombre: api.nombre,
+        apellidos: api.apellidos || "",
+        correo: api.correo,
+        telefono: api.telefono || "",
+        direccion: api.direccion || "",
+        rol: api.rol || "usuario",
+        estadoChofer: api.estadoChofer || "disponible",
+        entregas: api.entregas || 0,
+        activo: true
+    };
+}
+
+/* Al cargar la pagina, pregunta al servidor si ya hay sesion */
+async function restaurarSesionDesdeAPI() {
+    if (!await backendDisponible()) return false;
+    try {
+        const datos = await API.sesion();
+        if (datos.usuario) {
+            guardarSesion(usuarioDesdeAPI(datos.usuario));
+            actualizarBotonCuenta();
+            return true;
+        }
+    } catch (e) {}
+    return false;
+}
 
 function inicializarFormularioLogin() {
     const formLogin = document.getElementById("formLogin");
@@ -838,6 +920,32 @@ function inicializarFormularioLogin() {
             return;
         }
 
+        // --- CON BASE DE DATOS ---
+        if (await backendDisponible()) {
+            try {
+                const datos = await API.login(correo, password);
+                const cuenta = usuarioDesdeAPI(datos.usuario);
+
+                guardarSesion(cuenta);
+                actualizarBotonCuenta();
+                modalLogin?.classList.remove("activa");
+                formLogin.reset();
+
+                mostrarNotificacionCuenta(
+                    "¡Bienvenido(a)!",
+                    `Hola ${cuenta.nombre}, has iniciado sesión como ${cuenta.rol.toUpperCase()}.`,
+                    "👋"
+                );
+
+                mostrarCuentaPorRol(cuenta);
+                modalCuenta?.classList.add("activa");
+            } catch (error) {
+                mostrarNotificacionCuenta("No se pudo iniciar sesión", error.message, "❌");
+            }
+            return;
+        }
+
+        // --- RESPALDO LOCAL (sin servidor) ---
         const cuentas = obtenerCuentas();
         const cuenta = cuentas.find(c => normalizarCorreo(c.correo) === correo);
 
@@ -869,9 +977,44 @@ function inicializarFormularioLogin() {
     });
 
     // BOTONES DE ACCESO RÁPIDO DEMO
+    /* Cuentas de prueba reales de la base de datos */
+    const CUENTAS_DEMO = {
+        usuario: { correo: "usuario@mexamexa.com", password: "Usuario123" },
+        chofer:  { correo: "chofer@mexamexa.com",  password: "Chofer123" },
+        admin:   { correo: "admin@mexamexa.com",   password: "Admin123" }
+    };
+
     document.querySelectorAll(".btn-demo-rol").forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
             const demoRol = btn.getAttribute("data-demo");
+
+            // --- CON BASE DE DATOS ---
+            if (await backendDisponible()) {
+                const demo = CUENTAS_DEMO[demoRol];
+                if (!demo) return;
+                try {
+                    const datos = await API.login(demo.correo, demo.password);
+                    const cuenta = usuarioDesdeAPI(datos.usuario);
+
+                    guardarSesion(cuenta);
+                    actualizarBotonCuenta();
+                    modalLogin?.classList.remove("activa");
+
+                    mostrarNotificacionCuenta(
+                        "¡Acceso de prueba!",
+                        `Ingresaste como ${cuenta.nombre} (${cuenta.rol.toUpperCase()}).`,
+                        "⚡"
+                    );
+
+                    mostrarCuentaPorRol(cuenta);
+                    modalCuenta?.classList.add("activa");
+                } catch (error) {
+                    mostrarNotificacionCuenta("Acceso de prueba fallido", error.message, "❌");
+                }
+                return;
+            }
+
+            // --- RESPALDO LOCAL (sin servidor) ---
             const cuentas = obtenerCuentas();
             const cuentaDemo = cuentas.find(c => c.rol === demoRol && c.cuentaDemo);
 
@@ -977,13 +1120,37 @@ function iniciarModuloCuentas() {
     actualizarBotonCuenta();
 }
 
-// Arrancar al cargar el documento
-document.addEventListener("DOMContentLoaded", async () => {
+/* =====================================================
+   ARRANQUE
+   Se ejecuta una sola vez, llegue como llegue el script.
+   ===================================================== */
+
+let cuentasIniciadas = false;
+
+async function arrancarCuentas() {
+    if (cuentasIniciadas) return;
+    cuentasIniciadas = true;
+
     await inicializarCuentasDemo();
     iniciarModuloCuentas();
-});
 
-// Fallback por si DOM ya estaba listo
+    // Si hay servidor, la sesion real manda sobre el localStorage
+    if (await restaurarSesionDesdeAPI()) {
+        const sesion = obtenerSesionActual();
+        if (sesion) {
+            actualizarBotonCuenta();
+            mostrarNotificacionCuenta(
+                "Sesión restaurada",
+                `Hola de nuevo, ${sesion.nombre}.`,
+                "👋"
+            );
+        }
+    }
+}
+
+document.addEventListener("DOMContentLoaded", arrancarCuentas);
+
+// Fallback por si el script se carga cuando el DOM ya estaba listo
 if (document.readyState === "interactive" || document.readyState === "complete") {
-    inicializarCuentasDemo().then(iniciarModuloCuentas);
+    arrancarCuentas();
 }

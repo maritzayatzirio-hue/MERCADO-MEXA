@@ -1,0 +1,89 @@
+/* =====================================================
+   MERCADO MEXA - Cliente de la API
+   Helpers para hablar con los archivos PHP de /api
+   ===================================================== */
+
+const API = {
+    base: "api/",
+
+    async pedir(ruta, opciones = {}) {
+        const respuesta = await fetch(this.base + ruta, {
+            method: opciones.method || "GET",
+            // Imprescindible para que viaje la cookie de sesion PHP
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json", ...opciones.headers },
+            body: opciones.body
+        });
+
+        // Si el servidor devuelve HTML (por ejemplo un error de PHP)
+        // en vez de JSON, esto da un mensaje claro en vez de un error raro.
+        const texto = await respuesta.text();
+        let datos;
+        try {
+            datos = JSON.parse(texto);
+        } catch (e) {
+            throw new Error(`El servidor devolvio una respuesta no valida (HTTP ${respuesta.status})`);
+        }
+
+        if (!respuesta.ok || datos.ok === false) {
+            throw new Error(datos.error || `Error ${respuesta.status}`);
+        }
+
+        return datos;
+    },
+
+    /* Catalogo de productos */
+    async productos() {
+        const datos = await this.pedir("productos.php");
+        return datos.categorias;
+    },
+
+    /* Consultar la sesion actual (GET) */
+    async sesion() {
+        return this.pedir("auth.php");
+    },
+
+    /* Iniciar sesion */
+    async login(correo, password) {
+        return this.pedir("auth.php", {
+            method: "POST",
+            body: JSON.stringify({ accion: "login", correo, password })
+        });
+    },
+
+    /* Crear cuenta.
+       Nota: el rol SIEMPRE es "usuario". El cliente no puede
+       pedir admin ni chofer, porque eso lo decide el servidor. */
+    async registro(datos) {
+        return this.pedir("auth.php", {
+            method: "POST",
+            body: JSON.stringify({
+                accion: "registro",
+                nombre: datos.nombre,
+                apellidos: datos.apellidos,
+                correo: datos.correo,
+                telefono: datos.telefono,
+                password: datos.password,
+                direccion: datos.direccion || ""
+            })
+        });
+    },
+
+    /* Cerrar sesion */
+    async logout() {
+        return this.pedir("auth.php", {
+            method: "POST",
+            body: JSON.stringify({ accion: "logout" })
+        });
+    },
+
+    /* Carrito del usuario */
+    async carrito() {
+        return this.pedir("carrito.php");
+    },
+
+    /* Pedidos del usuario */
+    async pedidos() {
+        return this.pedir("pedidos.php");
+    }
+};

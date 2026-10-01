@@ -40,6 +40,31 @@ function iniciarAplicacion() {
     actualizarContador();
     prepararEventos();
     iniciarSplash();
+    cargarCatalogoDesdeAPI().then(catalogo => {
+        if (catalogo) refrescarCatalogoEnPantalla();
+    });
+}
+
+/* Vuelve a pintar el catalogo ya con los datos de la base de datos */
+function refrescarCatalogoEnPantalla() {
+    const categorias = getCategoriasBase();
+    const total = categorias.reduce((suma, c) => suma + (c.productos || []).length, 0);
+
+    // Aviso visible de que el catalogo ya viene de MySQL
+    const etiqueta = document.getElementById("estadoCatalogo");
+    if (etiqueta) {
+        etiqueta.textContent =
+            `Catalogo desde MySQL · ${total} productos · ${categorias.length} categorias`;
+        etiqueta.classList.add("catalogo-conectado");
+    }
+
+    // Si el modal del catalogo esta abierto, se redibuja su contenido
+    const modalCatalogo = document.querySelector(".contenido-modal.catalogo-modal")
+        ?.closest(".ventana-modal");
+    if (modalCatalogo) {
+        const tienda = tiendas[0];
+        if (tienda) mostrarContenidoCatalogo(modalCatalogo, tienda);
+    }
 }
 
 function iniciarSplash() {
@@ -4906,7 +4931,7 @@ function mostrarContenidoCatalogo(
 
 <!-- ENCABEZADO -->
 
-<div class="catalogo-encabezado">
+        <div class="catalogo-encabezado">
 
     <div class="catalogo-logo">
         Neto
@@ -4917,6 +4942,12 @@ function mostrarContenidoCatalogo(
         <span class="section-label">
             CATÁLOGO
         </span>
+
+        <small id="estadoCatalogo" class="catalogo-origen">
+            ${categoriasDesdeAPI && categoriasDesdeAPI.length
+                ? "Cargado desde MySQL"
+                : "Cargando desde MySQL…"}
+        </small>
 
         <h2>
             ${escapeHTML(tienda.nombre)}
@@ -5919,11 +5950,83 @@ function productoCatalogo(
 
 
 /* =========================
-   CATEGORÍAS
-   13 PRODUCTOS CADA UNA
+   CATEGORÍAS DESDE LA API
+   (MySQL via api/productos.php)
+   Los productos vienen de MySQL (api/productos.php).
+   Si la API falla, se usa el catalogo local como respaldo.
 ========================= */
 
+let categoriasDesdeAPI = null;
+let catalogoCargando = false;
+
+/* Normaliza un producto de la API al formato que usa el resto del codigo */
+function normalizarProductoAPI(producto) {
+    return {
+        id: producto.id,
+        nombre: producto.nombre,
+        precio: Number(producto.precio),
+        presentacion: producto.presentacion,
+        desc: producto.descripcion || producto.presentacion,
+        caducidad: producto.caducidad
+            ? new Date(producto.caducidad + "T00:00:00").toLocaleDateString("es-MX")
+            : "Consumo habitual",
+        lote: producto.lote || "—",
+        icono: producto.icono,
+        resenas: Number(producto.resenas) || 0,
+        enOferta: Boolean(producto.en_oferta),
+        etiquetaOferta: producto.etiqueta_oferta || "",
+        precioRegular: producto.precio_regular
+            ? Number(producto.precio_regular)
+            : null
+    };
+}
+
 function getCategoriasBase() {
+    if (categoriasDesdeAPI && categoriasDesdeAPI.length) return categoriasDesdeAPI;
+    return getCategoriasLocales();
+}
+
+/* Descarga el catalogo desde la base de datos */
+async function cargarCatalogoDesdeAPI() {
+    if (catalogoCargando) return;
+    catalogoCargando = true;
+
+    try {
+        const respuesta = await fetch("api/productos.php");
+        if (!respuesta.ok) throw new Error("HTTP " + respuesta.status);
+
+        const datos = await respuesta.json();
+        if (!datos.ok || !datos.categorias) throw new Error(datos.error || "respuesta invalida");
+
+        categoriasDesdeAPI = datos.categorias.map(categoria => ({
+            nombre: categoria.nombre,
+            icono: categoria.icono,
+            productos: categoria.productos.map(normalizarProductoAPI)
+        }));
+
+        console.log(
+            "[API] catalogo cargado:",
+            datos.total,
+            "productos en",
+            categoriasDesdeAPI.length,
+            "categorias"
+        );
+        return categoriasDesdeAPI;
+    } catch (error) {
+        console.warn("[API] no se pudo cargar el catalogo, se usa el local:", error.message);
+        return null;
+    } finally {
+        catalogoCargando = false;
+    }
+}
+
+/* =========================
+   CATEGORÍAS
+   13 PRODUCTOS CADA UNA
+   (respaldo local, se usa si la API no responde)
+========================= */
+
+function getCategoriasLocales() {
 
     return [
 

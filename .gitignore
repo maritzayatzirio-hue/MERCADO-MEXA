@@ -1,0 +1,23 @@
+# =====================================================
+   Datos de conexion: NUNCA se suben a GitHub
+   Contiene la contrasena de MySQL.
+   Sube config/bd.ejemplo.php (que no tiene contrasena).
+=====================================================
+config/bd.php
+
+# Archivos de prueba locales
+prueba-*.php
+prueba-*.html
+prueba-*.js
+
+# Exportaciones de la base de datos
+*.sql.gz
+*.sql.bak
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.log
