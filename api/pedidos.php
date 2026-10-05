@@ -156,6 +156,14 @@ try {
     fallar('No se pudo conectar con la base de datos', 500);
 }
 
+/* usuarioActual() corta con 401 si no hay sesion */
+usuarioActual();
+
+/* El rol se vuelve a leer de la base, por si un admin se lo cambio
+   a esta sesion mientras estaba abierta. Si la cuenta se desactivo,
+   refrescarSesion() cierra la sesion y el llamado de abajo da 401. */
+refrescarSesion($bd);
+
 $usuario = usuarioActual();
 $usuarioId = (int) $usuario['id'];
 $rol = (string) ($usuario['rol'] ?? 'usuario');

@@ -107,6 +107,38 @@ function obtenerTiendas(PDO $bd) {
     return $tiendas;
 }
 
+/* Vuelve a leer el rol del usuario desde la base y lo actualiza en
+   la sesion de PHP.
+
+   Hace falta porque el rol vive en dos lugares: en la tabla usuarios
+   y dentro de $_SESSION. Si un admin se lo cambia a alguien que ya
+   tiene la sesion abierta, sin esto el navegador seguiria usando el
+   rol viejo hasta que esa persona vuelva a iniciar sesion.
+
+   Se llama en los endpoints que deciden permisos. */
+function refrescarSesion(PDO $bd) {
+    if (empty($_SESSION['usuario']['id'])) {
+        return;
+    }
+
+    $q = $bd->prepare(
+        'SELECT rol, estado_chofer, entregas, activo
+         FROM usuarios WHERE id = ? LIMIT 1'
+    );
+    $q->execute([(int) $_SESSION['usuario']['id']]);
+    $fila = $q->fetch();
+
+    /* La cuenta ya no existe o esta desactivada: se cierra la sesion */
+    if (!$fila || !(int) $fila['activo']) {
+        $_SESSION = [];
+        return;
+    }
+
+    $_SESSION['usuario']['rol']          = $fila['rol'];
+    $_SESSION['usuario']['estadoChofer'] = $fila['estado_chofer'];
+    $_SESSION['usuario']['entregas']     = (int) $fila['entregas'];
+}
+
 /* Devuelve los datos publicos de un usuario (sin password_hash) */
 function usuarioPublico(array $fila) {
     return [

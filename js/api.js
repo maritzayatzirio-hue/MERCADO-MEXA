@@ -168,6 +168,29 @@ const API = {
         return r.pedido;
     },
 
+    /* ---- Usuarios (solo el administrador) ---- */
+
+    /* Lista las cuentas registradas en MySQL.
+       El password_hash nunca sale del servidor. */
+    async usuarios() {
+        const datos = await this.pedir("usuarios.php");
+        return datos.usuarios;
+    },
+
+    /* Cambia el rol de una cuenta.
+       El servidor no deja bajarse al unico administrador. */
+    async usuarioRol(usuarioId, rol) {
+        const r = await this.pedir("usuarios.php", {
+            method: "POST",
+            body: JSON.stringify({
+                accion: "rol",
+                usuarioId,
+                rol
+            })
+        });
+        return r.usuario;
+    },
+
     /* ---- Favoritos (guardados en MySQL) ---- */
 
     async favoritos() {

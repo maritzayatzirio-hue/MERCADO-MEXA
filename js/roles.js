@@ -572,8 +572,8 @@ function mostrarCuentaPorRol(sesion) {
                                 <span class="badge-rol-tag badge-rol-${u.rol || 'usuario'}" style="font-size: 8px; padding: 2px 7px;">
                                     ${(u.rol || 'usuario').toUpperCase()}
                                 </span>
-                                <button type="button" onclick="cambiarRolUsuarioAdmin('${u.id}')" title="Cambiar rol" style="padding: 3px 8px; border: 1px solid #ded9d0; border-radius: 6px; background: white; font-size: 9px; cursor: pointer;">
-                                    ↻ Rol
+                                <button type="button" onclick="cambiarRolUsuarioAdmin('${u.id}')" title="${u.id === sesion.id ? 'No puedes cambiar tu propio rol' : 'Cambiar rol'}" style="padding: 3px 8px; border: 1px solid #ded9d0; border-radius: 6px; background: ${u.id === sesion.id ? '#f3f0ea' : 'white'}; font-size: 9px; cursor: ${u.id === sesion.id ? 'not-allowed' : 'pointer'}; opacity: ${u.id === sesion.id ? 0.5 : 1};">
+                                    ${u.id === sesion.id ? '🔒' : '↻ Rol'}
                                 </button>
                             </div>
                         </div>
@@ -750,18 +750,53 @@ window.completarEntregaChofer = async function(pedidoId) {
     );
 };
 
-// Admin cambia el rol de un usuario registrado
-window.cambiarRolUsuarioAdmin = function(usuarioId) {
+// Admin cambia el rol de un usuario registrado.
+// Con PHP disponible el cambio se guarda en MySQL y el servidor
+// decide si se permite (no deja tocar al unico administrador).
+window.cambiarRolUsuarioAdmin = async function(usuarioId) {
+    const sesion = obtenerSesionActual();
     const cuentas = obtenerCuentas();
     const cuenta = cuentas.find(c => c.id === usuarioId);
     if (!cuenta) return;
 
     const roles = ["usuario", "chofer", "admin"];
     const siguienteIndex = (roles.indexOf(cuenta.rol) + 1) % roles.length;
-    cuenta.rol = roles[siguienteIndex];
+    const nuevoRol = roles[siguienteIndex];
+
+    const nombres = { usuario: "Usuario (Cliente)", chofer: "Chofer (Repartidor)", admin: "Administrador" };
+    const iconos = { usuario: "👤", chofer: "🚚", admin: "⚙️" };
+
+    if (typeof API !== "undefined" && await backendDisponible()) {
+        try {
+            await API.usuarioRol(usuarioId, nuevoRol);
+        } catch (e) {
+            mostrarNotificacionCuenta("No se pudo cambiar el rol", e.message, "⚠️");
+            return;
+        }
+
+        /* Se vuelve a pedir la lista para que el panel muestre lo que
+           quedo en la base, no lo que nosotros suponiamos */
+        await sincronizarCuentasDesdeAPI();
+
+        if (sesion && sesion.id === usuarioId) {
+            sesion.rol = nuevoRol;
+            guardarSesion(sesion);
+            actualizarBotonCuenta();
+        }
+
+        mostrarCuentaPorRol(obtenerSesionActual() || sesion);
+        mostrarNotificacionCuenta(
+            "Rol actualizado en MySQL",
+            `${cuenta.nombre} ahora tiene el rol: ${nombres[nuevoRol]}.`,
+            iconos[nuevoRol]
+        );
+        return;
+    }
+
+    /* Sin PHP el cambio se queda solo en el navegador */
+    cuenta.rol = nuevoRol;
     guardarCuentas(cuentas);
 
-    const sesion = obtenerSesionActual();
     if (sesion && sesion.id === usuarioId) {
         sesion.rol = cuenta.rol;
         guardarSesion(sesion);
@@ -769,7 +804,11 @@ window.cambiarRolUsuarioAdmin = function(usuarioId) {
     }
 
     mostrarCuentaPorRol(sesion);
-    mostrarNotificacionCuenta("Rol actualizado", `${cuenta.nombre} ahora tiene el rol: ${cuenta.rol.toUpperCase()}.`, "↻");
+    mostrarNotificacionCuenta(
+        "Rol actualizado",
+        `${cuenta.nombre} ahora tiene el rol: ${nombres[nuevoRol]}. Solo en este navegador: abre http://localhost/mercado-mexa/ para que se guarde en MySQL.`,
+        iconos[nuevoRol]
+    );
 };
 
 /* =====================================================
@@ -981,6 +1020,41 @@ async function restaurarSesionDesdeAPI() {
     return false;
 }
 
+/* =====================================================
+   CUENTAS CONECTADAS A LA BD
+   ===================================================== */
+
+/* Pide al servidor la lista real de cuentas y la deja en el mismo
+   formato que ya usaba el panel, para no tocar el HTML.
+   Solo el administrador puede pedirla, asi que si el servidor dice
+   que no, se deja la lista del navegador como estaba. */
+async function sincronizarCuentasDesdeAPI() {
+    const sesion = obtenerSesionActual();
+    if (!sesion || sesion.rol !== "admin") return false;
+    if (typeof API === "undefined" || !await backendDisponible()) return false;
+
+    try {
+        const lista = await API.usuarios();
+        guardarCuentas(lista.map(u => ({
+            id: String(u.id),
+            nombre: u.nombre,
+            apellidos: u.apellidos || "",
+            correo: u.correo,
+            telefono: u.telefono || "",
+            direccion: u.direccion || "",
+            rol: u.rol || "usuario",
+            estadoChofer: u.estadoChofer || "disponible",
+            entregas: u.entregas || 0,
+            activo: u.activo !== false,
+            cuentaDemo: !!u.cuentaDemo,
+            fechaRegistro: u.fechaRegistro
+        })));
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 function inicializarFormularioLogin() {
     const formLogin = document.getElementById("formLogin");
     const modalLogin = document.getElementById("modalLogin");
@@ -1138,11 +1212,14 @@ function iniciarModuloCuentas() {
     const modalRegistro = document.getElementById("modalRegistro");
     const modalTerminos = document.getElementById("modalTerminos");
 
-    // Botón principal de cuenta en el header
-    botonCuenta?.addEventListener("click", () => {
+    /* Botón principal de cuenta en el header.
+       Para el admin primero se pide la lista real de cuentas a MySQL,
+       asi el panel nunca muestra datos que solo existen en el navegador. */
+    botonCuenta?.addEventListener("click", async () => {
         const sesion = obtenerSesionActual();
         if (sesion) {
-            mostrarCuentaPorRol(sesion);
+            if (sesion.rol === "admin") await sincronizarCuentasDesdeAPI();
+            mostrarCuentaPorRol(obtenerSesionActual() || sesion);
         } else {
             restaurarCuentaInicial();
         }
