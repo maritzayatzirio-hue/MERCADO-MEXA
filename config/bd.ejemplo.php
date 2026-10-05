@@ -134,9 +134,11 @@ function refrescarSesion(PDO $bd) {
         return;
     }
 
-    $_SESSION['usuario']['rol']          = $fila['rol'];
-    $_SESSION['usuario']['estadoChofer'] = $fila['estado_chofer'];
-    $_SESSION['usuario']['entregas']     = (int) $fila['entregas'];
+    /* Las claves son las de la fila de usuarios, que es como se
+       guarda la sesion. usuarioPublico() las lee de ahi. */
+    $_SESSION['usuario']['rol']           = $fila['rol'];
+    $_SESSION['usuario']['estado_chofer'] = $fila['estado_chofer'];
+    $_SESSION['usuario']['entregas']      = (int) $fila['entregas'];
 }
 
 /* Devuelve los datos publicos de un usuario (sin password_hash) */

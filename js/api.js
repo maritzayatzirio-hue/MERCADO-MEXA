@@ -59,6 +59,18 @@ const API = {
         });
     },
 
+    /* Cambia el estado de ruta del chofer que tiene la sesion
+       abierta ("PASAR A RUTA" / "DISPONIBLE"). */
+    async estadoChofer(estado) {
+        return this.pedir("auth.php", {
+            method: "POST",
+            body: JSON.stringify({
+                accion: "estadoChofer",
+                estado
+            })
+        });
+    },
+
     /* Crear cuenta.
        Nota: el rol SIEMPRE es "usuario". El cliente no puede
        pedir admin ni chofer, porque eso lo decide el servidor. */

@@ -659,15 +659,45 @@ function mostrarCuentaPorRol(sesion) {
         document.querySelector('[data-target="mapa"]')?.click();
     });
 
-    // Eventos específicos de Chofer
-    document.getElementById("btnToggleEstadoChofer")?.addEventListener("click", () => {
+    /* Eventos específicos de Chofer.
+       Con PHP disponible el estado se guarda en la columna
+       estado_chofer de la tabla usuarios. */
+    document.getElementById("btnToggleEstadoChofer")?.addEventListener("click", async () => {
         const nuevoEstado = (sesion.estadoChofer === "disponible") ? "en_ruta" : "disponible";
+
+        if (typeof API !== "undefined" && await backendDisponible()) {
+            try {
+                const r = await API.estadoChofer(nuevoEstado);
+
+                /* El servidor manda el estado real, no el que suponemos */
+                if (r.usuario) {
+                    guardarSesion(usuarioDesdeAPI(r.usuario));
+                    sesion = obtenerSesionActual() || sesion;
+                } else {
+                    sesion.estadoChofer = nuevoEstado;
+                    guardarSesion(sesion);
+                }
+
+                mostrarCuentaPorRol(sesion);
+                mostrarNotificacionCuenta(
+                    nuevoEstado === "en_ruta" ? "Estado: En Ruta" : "Estado: Disponible",
+                    nuevoEstado === "en_ruta" ? "Ahora apareces en camino con pedidos." : "Disponible para recibir asignaciones.",
+                    nuevoEstado === "en_ruta" ? "🚚" : "🟢"
+                );
+                return;
+
+            } catch (e) {
+                mostrarNotificacionCuenta("No se pudo cambiar el estado", e.message, "⚠️");
+                return;
+            }
+        }
+
         sesion.estadoChofer = nuevoEstado;
         guardarSesion(sesion);
         mostrarCuentaPorRol(sesion);
         mostrarNotificacionCuenta(
             nuevoEstado === "en_ruta" ? "Estado: En Ruta" : "Estado: Disponible",
-            nuevoEstado === "en_ruta" ? "Ahora apareces en camino con pedidos." : "Disponible para recibir asignaciones.",
+            `${nuevoEstado === "en_ruta" ? "Ahora apareces en camino con pedidos." : "Disponible para recibir asignaciones."} Solo en este navegador: abre http://localhost/mercado-mexa/ para que se guarde en MySQL.`,
             nuevoEstado === "en_ruta" ? "🚚" : "🟢"
         );
     });

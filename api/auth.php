@@ -8,7 +8,12 @@
      POST api/auth.php  {"accion":"login","correo":"...","password":"..."}
      POST api/auth.php  {"accion":"registro","nombre":"...","apellidos":"...",
                          "correo":"...","telefono":"...","password":"..."}
+     POST api/auth.php  {"accion":"estadoChofer","estado":"en_ruta"}
      POST api/auth.php  {"accion":"logout"}
+
+   La accion "estadoChofer" es para el boton "PASAR A RUTA" del
+   panel del chofer. Solo un chofer puede llamarla y solo cambia
+   su propio estado.
 
    El rol lo decide el servidor: un registro publico siempre
    es "usuario", aunque el cliente mande otro valor.
@@ -92,6 +97,12 @@ if ($accion === 'logout') {
 ========================= */
 
 if ($accion === '') {
+    /* Rol, estado y entregas se releen de la base. Asi el navegador
+       nunca restaura una sesion con datos que ya cambiaron.
+       Si la cuenta se desactivo, refrescarSesion() cierra la sesion
+       y aqui se devuelve usuario: null. */
+    refrescarSesion($bd);
+
     echo json_encode([
         'ok'      => true,
         'accion'  => 'sesion',
@@ -153,8 +164,51 @@ if ($accion === 'login') {
 }
 
 /* =========================
+   ESTADO DEL CHOFER
+   El boton "PASAR A RUTA" del panel. Solo el chofer cambia
+   su propio estado, y no necesita ser admin.
+   ========================= */
+
+if ($accion === 'estadoChofer') {
+    if (empty($_SESSION['usuario']['id'])) {
+        responderError('Inicia sesion primero', 401);
+    }
+
+    /* El rol se vuelve a leer de la base, por si un admin se lo
+       cambio a esta sesion mientras estaba abierta */
+    refrescarSesion($bd);
+
+    if (($_SESSION['usuario']['rol'] ?? '') !== 'chofer') {
+        responderError('Solo un chofer puede cambiar su estado', 403);
+    }
+
+    $estado = (string) ($datos['estado'] ?? '');
+
+    if (!in_array($estado, ['disponible', 'en_ruta'], true)) {
+        responderError('Ese estado no existe');
+    }
+
+    $usuarioId = (int) $_SESSION['usuario']['id'];
+
+    $cambiar = $bd->prepare('UPDATE usuarios SET estado_chofer = ? WHERE id = ?');
+    $cambiar->execute([$estado, $usuarioId]);
+
+    /* La sesion se actualiza de una vez para que el resto de la
+       pagina no tenga que volver a preguntar */
+    $_SESSION['usuario']['estado_chofer'] = $estado;
+
+    echo json_encode([
+        'ok'      => true,
+        'accion'  => 'estadoChofer',
+        'estado'  => $estado,
+        'usuario' => usuarioPublico($_SESSION['usuario']),
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+/* =========================
    CREAR CUENTA
-========================= */
+   ========================= */
 
 if ($accion === 'registro') {
     $nombre    = trim((string) ($datos['nombre'] ?? ''));
