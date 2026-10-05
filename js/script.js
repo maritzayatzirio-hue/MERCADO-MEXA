@@ -552,13 +552,21 @@ function guardarSesion(cuenta) {
    CERRAR SESIÓN
 ===================================================== */
 
-function cerrarSesionMexa() {
+async function cerrarSesionMexa() {
 
-    localStorage.removeItem(
-        "sesionMexa"
-    );
+    /* Notificar al servidor para destruir la cookie de sesion PHP */
+    if (typeof API !== "undefined") {
+        try { await API.logout(); } catch (e) { /* no critico */ }
+    }
+
+    localStorage.removeItem("sesionMexa");
+    localStorage.removeItem("carritoMexa");
+    localStorage.removeItem("favoritosMexa");
+    carrito = [];
+    favoritosMexa = [];
 
     actualizarBotonCuenta();
+    actualizarContador();
 
 }
 
@@ -915,313 +923,127 @@ formRegistro?.addEventListener(
         e.preventDefault();
         e.stopPropagation();
 
-
         /* =========================
            DATOS
         ========================= */
 
         const nombre =
-            document
-                .getElementById(
-                    "registroNombre"
-                )
-                ?.value
-                .trim() || "";
-
+            document.getElementById("registroNombre")?.value.trim() || "";
 
         const apellidos =
-            document
-                .getElementById(
-                    "registroApellidos"
-                )
-                ?.value
-                .trim() || "";
-
+            document.getElementById("registroApellidos")?.value.trim() || "";
 
         const correo =
-            normalizarCorreo(
-                document
-                    .getElementById(
-                        "registroCorreo"
-                    )
-                    ?.value || ""
-            );
-
+            normalizarCorreo(document.getElementById("registroCorreo")?.value || "");
 
         const telefono =
-            document
-                .getElementById(
-                    "registroTelefono"
-                )
-                ?.value
-                .trim() || "";
+            document.getElementById("registroTelefono")?.value.trim() || "";
 
         const direccion =
-            document
-                .getElementById("registroDireccion")
-                ?.value
-                .trim() || "";
-
+            document.getElementById("registroDireccion")?.value.trim() || "";
 
         const password =
-            document
-                .getElementById(
-                    "registroPassword"
-                )
-                ?.value || "";
-
+            document.getElementById("registroPassword")?.value || "";
 
         const passwordConfirm =
-            document
-                .getElementById(
-                    "registroPasswordConfirm"
-                )
-                ?.value || "";
-
+            document.getElementById("registroPasswordConfirm")?.value || "";
 
         const aceptaTerminos =
-            document
-                .getElementById(
-                    "registroTerminos"
-                )
-                ?.checked || false;
-
+            document.getElementById("registroTerminos")?.checked || false;
 
         /* =========================
            VALIDAR CAMPOS
         ========================= */
 
-        if (
-            !nombre ||
-            !apellidos ||
-            !correo ||
-            !telefono ||
-            !direccion ||
-            !password ||
-            !passwordConfirm
-        ) {
-
-            mostrarNotificacionCuenta(
-                "Datos incompletos",
-                "Completa todos los campos."
-            );
-
+        if (!nombre || !apellidos || !correo || !telefono || !password || !passwordConfirm) {
+            mostrarNotificacionCuenta("Datos incompletos", "Completa todos los campos.");
             return;
-
         }
 
-
-        /* =========================
-           VALIDAR CORREO
-        ========================= */
-
-        const correoValido =
-            /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-                .test(
-                    correo
-                );
-
-
-        if (!correoValido) {
-
-            mostrarNotificacionCuenta(
-                "Correo no válido",
-                "Ingresa un correo electrónico válido."
-            );
-
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            mostrarNotificacionCuenta("Correo no válido", "Ingresa un correo electrónico válido.");
             return;
-
         }
 
-
-        /* =========================
-           VALIDAR PASSWORD
-        ========================= */
-
-        if (
-            password.length < 6
-        ) {
-
-            mostrarNotificacionCuenta(
-                "Contraseña no válida",
-                "La contraseña debe tener al menos 6 caracteres."
-            );
-
+        if (password.length < 6) {
+            mostrarNotificacionCuenta("Contraseña no válida", "La contraseña debe tener al menos 6 caracteres.");
             return;
-
         }
 
-
-        /* =========================
-           CONFIRMAR PASSWORD
-        ========================= */
-
-        if (
-            password !==
-            passwordConfirm
-        ) {
-
-            mostrarNotificacionCuenta(
-                "Las contraseñas no coinciden",
-                "Escribe la misma contraseña en ambos campos."
-            );
-
+        if (password !== passwordConfirm) {
+            mostrarNotificacionCuenta("Las contraseñas no coinciden", "Escribe la misma contraseña en ambos campos.");
             return;
-
         }
-
-
-        /* =========================
-           TÉRMINOS
-        ========================= */
 
         if (!aceptaTerminos) {
-
-            mostrarNotificacionCuenta(
-                "Acepta los términos",
-                "Debes aceptar los términos y condiciones."
-            );
-
+            mostrarNotificacionCuenta("Acepta los términos", "Debes aceptar los términos y condiciones.");
             return;
-
         }
 
-
         /* =========================
-           OBTENER CUENTAS
+           REGISTRAR EN MYSQL (via API)
         ========================= */
 
-        const cuentas =
-            obtenerCuentas();
+        if (typeof API !== "undefined") {
+            try {
+                const respuesta = await API.registro({ nombre, apellidos, correo, telefono, password, direccion });
 
+                /* El servidor devuelve el usuario ya creado con sesion iniciada */
+                guardarSesion(respuesta.usuario);
+                actualizarBotonCuenta();
+
+                formRegistro.reset();
+                modalRegistro?.classList.remove("activa");
+
+                mostrarNotificacionCuenta(
+                    "¡Cuenta creada!",
+                    `Bienvenido/a ${respuesta.usuario.nombre}. Tu cuenta fue registrada correctamente.`
+                );
+
+                /* Sincronizar datos del usuario recien creado */
+                sincronizarCarritoDesdeAPI();
+                sincronizarPedidosDesdeAPI();
+                sincronizarFavoritosDesdeAPI();
+
+                return;
+            } catch (errorAPI) {
+                mostrarNotificacionCuenta("No se pudo crear la cuenta", errorAPI.message || "Intenta de nuevo.");
+                return;
+            }
+        }
 
         /* =========================
-           COMPROBAR CORREO
+           RESPALDO: guardar en localStorage si no hay servidor
         ========================= */
 
-        const existe =
-            cuentas.some(
-                cuenta =>
-                    normalizarCorreo(
-                        cuenta.correo
-                    ) === correo
-            );
+        const cuentas = obtenerCuentas();
 
-
+        const existe = cuentas.some(c => normalizarCorreo(c.correo) === correo);
         if (existe) {
-
-            mostrarNotificacionCuenta(
-                "Correo ya registrado",
-                "Ya existe una cuenta con ese correo."
-            );
-
+            mostrarNotificacionCuenta("Correo ya registrado", "Ya existe una cuenta con ese correo.");
             return;
-
         }
 
-
-        /* =========================
-           CREAR HASH
-        ========================= */
-
-        const passwordHash =
-            await hashPassword(
-                password
-            );
-
-
-        /* =========================
-           CREAR CUENTA
-        =========================
-
-           TODOS LOS REGISTROS
-           PÚBLICOS SON USUARIO.
-        */
+        const passwordHash = await hashPassword(password);
 
         const nuevaCuenta = {
-
-            id:
-                crearIdCuenta(),
-
-            nombre,
-
-            apellidos,
-
-            correo,
-
-            telefono,
-
-            direccion,
-
+            id: crearIdCuenta(),
+            nombre, apellidos, correo, telefono, direccion,
             passwordHash,
-
-            rol:
-                "usuario",
-
-            activo:
-                true,
-
-            fechaRegistro:
-                new Date()
-                    .toISOString()
-
+            rol: "usuario",
+            activo: true,
+            fechaRegistro: new Date().toISOString()
         };
 
-
-        /* =========================
-           GUARDAR
-        ========================= */
-
-        cuentas.push(
-            nuevaCuenta
-        );
-
-        guardarCuentas(
-            cuentas
-        );
-
-
-        /* =========================
-           LIMPIAR FORMULARIO
-        ========================= */
+        cuentas.push(nuevaCuenta);
+        guardarCuentas(cuentas);
 
         formRegistro.reset();
+        modalRegistro?.classList.remove("activa");
+        modalLogin?.classList.add("activa");
 
-
-        /* =========================
-           CERRAR REGISTRO
-        ========================= */
-
-        modalRegistro?.classList.remove(
-            "activa"
-        );
-
-
-        /* =========================
-           ABRIR LOGIN
-        ========================= */
-
-        modalLogin?.classList.add(
-            "activa"
-        );
-
-
-        /* =========================
-           COLOCAR CORREO
-        ========================= */
-
-        const loginCorreo =
-            document.getElementById(
-                "loginCorreo"
-            );
-
-        if (loginCorreo) {
-
-            loginCorreo.value =
-                correo;
-
-        }
-
+        const loginCorreo = document.getElementById("loginCorreo");
+        if (loginCorreo) loginCorreo.value = correo;
 
         mostrarNotificacionCuenta(
             "¡Cuenta creada!",
@@ -1243,218 +1065,109 @@ formLogin?.addEventListener(
         e.preventDefault();
         e.stopPropagation();
 
-
         /* =========================
            DATOS
         ========================= */
 
         const correo =
-            normalizarCorreo(
-                document
-                    .getElementById(
-                        "loginCorreo"
-                    )
-                    ?.value || ""
-            );
-
+            normalizarCorreo(document.getElementById("loginCorreo")?.value || "");
 
         const password =
-            document
-                .getElementById(
-                    "loginPassword"
-                )
-                ?.value || "";
-
+            document.getElementById("loginPassword")?.value || "";
 
         /* =========================
            VALIDAR
         ========================= */
 
-        if (
-            !correo ||
-            !password
-        ) {
-
-            mostrarNotificacionCuenta(
-                "Datos incompletos",
-                "Completa correo y contraseña."
-            );
-
+        if (!correo || !password) {
+            mostrarNotificacionCuenta("Datos incompletos", "Completa correo y contraseña.");
             return;
-
         }
 
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            mostrarNotificacionCuenta("Correo no válido", "Ingresa un correo electrónico válido.");
+            return;
+        }
+
+        if (password.length < 6) {
+            mostrarNotificacionCuenta("Contraseña no válida", "La contraseña debe tener al menos 6 caracteres.");
+            return;
+        }
 
         /* =========================
-           CORREO
+           INICIAR SESION EN MYSQL (via API)
         ========================= */
 
-        const correoValido =
-            /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-                .test(
-                    correo
+        if (typeof API !== "undefined") {
+            try {
+                const respuesta = await API.login(correo, password);
+
+                guardarSesion(respuesta.usuario);
+                actualizarBotonCuenta();
+                modalLogin?.classList.remove("activa");
+
+                let mensaje = "Has iniciado sesión correctamente.";
+                if (respuesta.usuario.rol === "chofer") mensaje = "Bienvenido al panel de chofer.";
+                if (respuesta.usuario.rol === "admin")  mensaje = "Bienvenido al panel de administración.";
+
+                mostrarNotificacionCuenta(
+                    "¡Sesión iniciada!",
+                    `Hola ${respuesta.usuario.nombre}. ${mensaje}`
                 );
 
+                formLogin.reset();
 
-        if (!correoValido) {
+                /* Sincronizar carrito, pedidos y favoritos del usuario */
+                sincronizarCarritoDesdeAPI();
+                sincronizarPedidosDesdeAPI();
+                sincronizarFavoritosDesdeAPI();
 
-            mostrarNotificacionCuenta(
-                "Correo no válido",
-                "Ingresa un correo electrónico válido."
-            );
+                const checkoutForm = document.getElementById("formCheckout");
+                if (checkoutForm?.dataset.esperandoLogin === "true") {
+                    delete checkoutForm.dataset.esperandoLogin;
+                    actualizarInformacionClienteCheckout();
+                }
 
-            return;
-
+                return;
+            } catch (errorAPI) {
+                mostrarNotificacionCuenta("No se pudo iniciar sesión", errorAPI.message || "Correo o contraseña incorrectos.");
+                return;
+            }
         }
 
-
         /* =========================
-           PASSWORD
+           RESPALDO: autenticacion local si no hay servidor
         ========================= */
 
-        if (
-            password.length < 6
-        ) {
-
-            mostrarNotificacionCuenta(
-                "Contraseña no válida",
-                "La contraseña debe tener al menos 6 caracteres."
-            );
-
-            return;
-
-        }
-
-
-        /* =========================
-           BUSCAR CUENTA
-        ========================= */
-
-        const cuentas =
-            obtenerCuentas();
-
-
-        const cuenta =
-            cuentas.find(
-                c =>
-                    normalizarCorreo(
-                        c.correo
-                    ) === correo
-            );
-
+        const cuentas = obtenerCuentas();
+        const cuenta = cuentas.find(c => normalizarCorreo(c.correo) === correo);
 
         if (!cuenta) {
-
-            mostrarNotificacionCuenta(
-                "Cuenta no encontrada",
-                "No existe una cuenta con ese correo."
-            );
-
+            mostrarNotificacionCuenta("Cuenta no encontrada", "No existe una cuenta con ese correo.");
             return;
-
         }
 
-
-        /* =========================
-           CUENTA ACTIVA
-        ========================= */
-
-        if (
-            cuenta.activo === false
-        ) {
-
-            mostrarNotificacionCuenta(
-                "Cuenta desactivada",
-                "Esta cuenta no está disponible."
-            );
-
+        if (cuenta.activo === false) {
+            mostrarNotificacionCuenta("Cuenta desactivada", "Esta cuenta no está disponible.");
             return;
-
         }
 
+        const passwordHash = await hashPassword(password);
 
-        /* =========================
-           COMPROBAR PASSWORD
-        ========================= */
-
-        const passwordHash =
-            await hashPassword(
-                password
-            );
-
-
-        if (
-            cuenta.passwordHash !==
-            passwordHash
-        ) {
-
-            mostrarNotificacionCuenta(
-                "Contraseña incorrecta",
-                "La contraseña ingresada no es correcta."
-            );
-
+        if (cuenta.passwordHash !== passwordHash) {
+            mostrarNotificacionCuenta("Contraseña incorrecta", "La contraseña ingresada no es correcta.");
             return;
-
         }
 
-
-        /* =========================
-           GUARDAR SESIÓN
-        ========================= */
-
-        guardarSesion(
-            cuenta
-        );
-
-
-        /* =========================
-           CERRAR LOGIN
-        ========================= */
-
-        modalLogin?.classList.remove(
-            "activa"
-        );
-
-
-        /* =========================
-           ACTUALIZAR BOTÓN
-        ========================= */
-
+        guardarSesion(cuenta);
+        modalLogin?.classList.remove("activa");
         actualizarBotonCuenta();
 
+        let mensaje = "Has iniciado sesión correctamente.";
+        if (cuenta.rol === "chofer") mensaje = "Bienvenido al panel de chofer.";
+        if (cuenta.rol === "admin")  mensaje = "Bienvenido al panel de administración.";
 
-        /* =========================
-           MENSAJE SEGÚN ROL
-        ========================= */
-
-        let mensaje =
-            "Has iniciado sesión correctamente.";
-
-
-        if (
-            cuenta.rol === "chofer"
-        ) {
-
-            mensaje =
-                "Bienvenido al panel de chofer.";
-
-        }
-
-
-        if (
-            cuenta.rol === "admin"
-        ) {
-
-            mensaje =
-                "Bienvenido al panel de administración.";
-
-        }
-
-
-        mostrarNotificacionCuenta(
-            "¡Sesión iniciada!",
-            `Hola ${cuenta.nombre}. ${mensaje}`
-        );
+        mostrarNotificacionCuenta("¡Sesión iniciada!", `Hola ${cuenta.nombre}. ${mensaje}`);
 
         const checkoutForm = document.getElementById("formCheckout");
         if (checkoutForm?.dataset.esperandoLogin === "true") {

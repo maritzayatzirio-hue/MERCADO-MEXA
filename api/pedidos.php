@@ -282,7 +282,7 @@ try {
 
 } catch (Throwable $e) {
     $bd->rollBack();
-    failar('No se pudo guardar el pedido. Intenta de nuevo.', 500);
+    fallar('No se pudo guardar el pedido. Intenta de nuevo.', 500);
 }
 
 echo json_encode([
