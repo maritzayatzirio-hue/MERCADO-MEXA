@@ -165,6 +165,37 @@ const API = {
         return r.pedido;
     },
 
+    /* Crea el pedido con precios del servidor y una preferencia de Mercado Pago. */
+    async pedidoPagar(datos) {
+        const r = await this.pedir("pedidos.php", {
+            method: "POST",
+            body: JSON.stringify({
+                accion: "crear_pago_mp",
+                tienda: datos.tienda,
+                modalidad: datos.modalidad,
+                direccion: datos.direccion,
+                referencias: datos.referencias || "",
+                cliente: datos.cliente,
+                correo: datos.correo,
+                telefono: datos.telefono
+            })
+        });
+        return r.pedido;
+    },
+
+    /* Confirma el pago consultando Mercado Pago desde el servidor. */
+    async pedidoConfirmarPago(folio, paymentId) {
+        const r = await this.pedir("pedidos.php", {
+            method: "POST",
+            body: JSON.stringify({
+                accion: "confirmar_pago_mp",
+                folio,
+                paymentId
+            })
+        });
+        return r.pedido;
+    },
+
     /* Marca un pedido como entregado (solo chofer o admin).
        El codigo es el de 6 digitos que se le dio al cliente,
        y el servidor lo revisa antes de guardar nada. */

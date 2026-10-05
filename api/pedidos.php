@@ -9,6 +9,9 @@
                                                    que tiene asignados y el admin
                                                    ve todos)
      POST api/pedidos.php {"accion":"crear", ...datos de entrega...}
+     POST api/pedidos.php {"accion":"crear_pago_mp", ...datos de entrega y contacto...}
+     POST api/pedidos.php {"accion":"confirmar_pago_mp", "folio":"MX-XXXXXX",
+                           "paymentId":"123456"}
      POST api/pedidos.php {"accion":"entregar", "folio":"MX-XXXXXX",
                            "codigo":"123456"}
 
@@ -17,7 +20,7 @@
      modalidad   -> "pickup" o "envio"
      direccion   -> texto de la direccion
      referencias -> texto opcional
-     metodoPago  -> texto
+     metodoPago  -> texto (solo para el flujo sin Checkout Pro)
 
    Datos que recibe al entregar (solo chofer o admin):
      folio       -> folio del pedido, tal como aparece en la app
@@ -31,6 +34,7 @@
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../config/bd.php';
+require_once __DIR__ . '/mercadopago_helpers.php';
 
 session_start();
 
@@ -137,7 +141,10 @@ function listarPedidos(PDO $bd, int $usuarioId, string $rol) {
             'direccion'     => $p['direccion'],
             'referencias'   => $p['referencias'],
             'metodoPago'    => $p['metodo_pago'],
-            'codigoEntrega' => $p['codigo_entrega'],
+            'codigoEntrega' => $p['metodo_pago'] !== 'Mercado Pago' || $p['estado_pago'] === 'pagado'
+                ? $p['codigo_entrega']
+                : null,
+            'estadoPago'    => $p['estado_pago'],
             'total'         => (float) $p['total'],
             'fecha'         => $p['pedido_en'],
             'entregadoEn'   => $p['entregado_en'],
@@ -198,6 +205,16 @@ if ($accion === 'crear') {
     exit;
 }
 
+if ($accion === 'crear_pago_mp') {
+    crearPedido($bd, $usuario, $datos, true);
+    exit;
+}
+
+if ($accion === 'confirmar_pago_mp') {
+    confirmarPagoMercadoPago($bd, $usuario, $datos);
+    exit;
+}
+
 if ($accion === 'entregar') {
     entregarPedido($bd, $usuario, $datos);
     exit;
@@ -238,6 +255,10 @@ function entregarPedido(PDO $bd, array $usuario, array $datos) {
 
     if ($pedido['estado'] === 'entregado') {
         fallar('Ese pedido ya fue entregado', 409);
+    }
+
+    if ($pedido['metodo_pago'] === 'Mercado Pago' && $pedido['estado_pago'] !== 'pagado') {
+        fallar('No se puede entregar un pedido hasta que Mercado Pago confirme el pago', 409);
     }
 
     if ($codigo === '' || !hash_equals((string) $pedido['codigo_entrega'], $codigo)) {
@@ -294,18 +315,91 @@ function entregarPedido(PDO $bd, array $usuario, array $datos) {
     ], JSON_UNESCAPED_UNICODE);
 }
 
+function confirmarPagoMercadoPago(PDO $bd, array $usuario, array $datos) {
+    $folio = trim((string) ($datos['folio'] ?? ''));
+    $paymentId = trim((string) ($datos['paymentId'] ?? ''));
+    if ($folio === '' || $paymentId === '') {
+        fallar('Falta la referencia del pedido o del pago.');
+    }
+
+    $buscar = $bd->prepare(
+        'SELECT id FROM pedidos
+         WHERE folio = ? AND usuario_id = ? AND metodo_pago = "Mercado Pago" LIMIT 1'
+    );
+    $buscar->execute([$folio, (int) $usuario['id']]);
+    if (!$buscar->fetch()) {
+        fallar('No se encontro ese pedido de Mercado Pago.', 404);
+    }
+
+    try {
+        $pago = mercadoPagoConsultarPago($paymentId);
+        $estado = mercadoPagoActualizarEstadoPedido($bd, $pago);
+    } catch (Throwable $error) {
+        fallar('No se pudo verificar el pago con Mercado Pago. ' . $error->getMessage(), 502);
+    }
+
+    if ($estado['estadoPago'] !== 'pagado') {
+        fallar('Mercado Pago todavía no confirma este pago.', 409);
+    }
+
+    $pedidoQ = $bd->prepare(
+        'SELECT p.folio, p.modalidad, p.cliente_nombre, p.cliente_telefono,
+                p.direccion, p.codigo_entrega, p.total, p.pedido_en,
+                t.nombre AS tienda_nombre
+         FROM pedidos p
+         LEFT JOIN tiendas t ON t.id = p.tienda_id
+         WHERE p.id = ? LIMIT 1'
+    );
+    $pedidoQ->execute([$estado['id']]);
+    $pedido = $pedidoQ->fetch();
+    $itemsQ = $bd->prepare(
+        'SELECT producto_nombre AS nombre, cantidad, precio_unitario AS precio, subtotal
+         FROM pedido_items WHERE pedido_id = ? ORDER BY id'
+    );
+    $itemsQ->execute([$estado['id']]);
+
+    echo json_encode([
+        'ok' => true,
+        'accion' => 'confirmar_pago_mp',
+        'pedido' => [
+            'id' => $estado['id'],
+            'folio' => $pedido['folio'],
+            'estadoPago' => $estado['estadoPago'],
+            'tienda' => $pedido['tienda_nombre'],
+            'modalidad' => $pedido['modalidad'],
+            'cliente' => $pedido['cliente_nombre'],
+            'telefono' => $pedido['cliente_telefono'],
+            'direccion' => $pedido['direccion'],
+            'codigoEntrega' => $pedido['codigo_entrega'],
+            'total' => (float) $pedido['total'],
+            'fecha' => $pedido['pedido_en'],
+            'items' => array_map(static function ($item) {
+                return [
+                    'nombre' => $item['nombre'],
+                    'cantidad' => (int) $item['cantidad'],
+                    'precio' => (float) $item['precio'],
+                    'subtotal' => (float) $item['subtotal'],
+                ];
+            }, $itemsQ->fetchAll()),
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+}
+
 
 /* ------------------------------------------------------------
    Crea el pedido con lo que hay en el carrito del usuario
    ------------------------------------------------------------ */
-function crearPedido(PDO $bd, array $usuario, array $datos) {
+function crearPedido(PDO $bd, array $usuario, array $datos, bool $pagoMercadoPago = false) {
     $usuarioId = (int) $usuario['id'];
 
     $slug        = trim((string) ($datos['tienda'] ?? ''));
     $modalidad   = (string) ($datos['modalidad'] ?? '');
     $direccion   = trim((string) ($datos['direccion'] ?? ''));
     $referencias = trim((string) ($datos['referencias'] ?? ''));
-    $metodoPago  = trim((string) ($datos['metodoPago'] ?? 'Efectivo al recibir'));
+    $metodoPago  = $pagoMercadoPago ? 'Mercado Pago' : trim((string) ($datos['metodoPago'] ?? 'Efectivo al recibir'));
+    $clientePago = trim((string) ($datos['cliente'] ?? ''));
+    $correoPago  = trim((string) ($datos['correo'] ?? ''));
+    $telefonoPago = trim((string) ($datos['telefono'] ?? ''));
 
     if ($slug === '') {
         fallar('Falta la tienda del pedido');
@@ -332,7 +426,19 @@ function crearPedido(PDO $bd, array $usuario, array $datos) {
     ];
 
     if (!in_array($metodoPago, $metodosPago, true)) {
-        fallar('Esa forma de pago no existe');
+        if (!$pagoMercadoPago || $metodoPago !== 'Mercado Pago') {
+            fallar('Esa forma de pago no existe');
+        }
+    }
+
+    if ($pagoMercadoPago && (
+        $clientePago === '' ||
+        strlen($clientePago) > 150 ||
+        strlen($correoPago) > 150 ||
+        !filter_var($correoPago, FILTER_VALIDATE_EMAIL) ||
+        !preg_match('/^[0-9+()\s.-]{7,20}$/', $telefonoPago)
+    )) {
+        fallar('Revisa el nombre, correo y telefono para el pago.');
     }
 
     /* La tienda se busca por su slug */
@@ -386,10 +492,10 @@ function crearPedido(PDO $bd, array $usuario, array $datos) {
         $folio = generarFolio();
         $codigo = generarCodigoEntrega();
 
-        $nombreCompleto = trim(
-            ($usuario['nombre'] ?? '') . ' ' . ($usuario['apellidos'] ?? '')
-        );
-        $telefono = (string) ($usuario['telefono'] ?? '');
+        $nombreCompleto = $pagoMercadoPago
+            ? $clientePago
+            : trim(($usuario['nombre'] ?? '') . ' ' . ($usuario['apellidos'] ?? ''));
+        $telefono = $pagoMercadoPago ? $telefonoPago : (string) ($usuario['telefono'] ?? '');
 
         $pedidoQ = $bd->prepare(
             'INSERT INTO pedidos
@@ -436,15 +542,59 @@ function crearPedido(PDO $bd, array $usuario, array $datos) {
             ]);
         }
 
-        /* El carrito se vacia porque sus productos ya son un pedido */
-        $vaciar = $bd->prepare('DELETE FROM carrito WHERE usuario_id = ?');
-        $vaciar->execute([$usuarioId]);
+        $preferencia = null;
+        if ($pagoMercadoPago) {
+            $usuarioPago = $usuario;
+            $nombres = preg_split('/\s+/', $clientePago, 2);
+            $usuarioPago['nombre'] = $nombres[0] ?? '';
+            $usuarioPago['apellidos'] = $nombres[1] ?? '';
+            $usuarioPago['telefono'] = $telefonoPago;
+            $preferencia = mercadoPagoCrearPreferencia(
+                ['folio' => $folio],
+                $items,
+                $usuarioPago,
+                $correoPago
+            );
+            if (empty($preferencia['id']) || empty($preferencia['checkout_url'])) {
+                throw new RuntimeException('Mercado Pago no devolvio un enlace de pago valido.');
+            }
+            $guardarPreferencia = $bd->prepare(
+                'UPDATE pedidos
+                 SET estado_pago = "pendiente", mp_preferencia_id = ?
+                 WHERE id = ?'
+            );
+            $guardarPreferencia->execute([(string) $preferencia['id'], $pedidoId]);
+        }
+
+        if (!$pagoMercadoPago) {
+            /* El pedido normal queda confirmado: se vacia el carrito. */
+            $vaciar = $bd->prepare('DELETE FROM carrito WHERE usuario_id = ?');
+            $vaciar->execute([$usuarioId]);
+        }
 
         $bd->commit();
 
     } catch (Throwable $e) {
         $bd->rollBack();
-        fallar('No se pudo guardar el pedido. Intenta de nuevo.', 500);
+        fallar(
+            $pagoMercadoPago
+                ? 'No se pudo iniciar el pago. ' . $e->getMessage()
+                : 'No se pudo guardar el pedido. Intenta de nuevo.',
+            500
+        );
+    }
+
+    if ($pagoMercadoPago) {
+        echo json_encode([
+            'ok' => true,
+            'accion' => 'crear_pago_mp',
+            'pedido' => [
+                'folio' => $folio,
+                'total' => $total,
+                'checkoutUrl' => $preferencia['checkout_url'],
+            ],
+        ], JSON_UNESCAPED_UNICODE);
+        return;
     }
 
     echo json_encode([

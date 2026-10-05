@@ -14,6 +14,7 @@ let marcadoresTiendas = [];
 let tiendas = [];
 let tiendasVisibles = 6;
 let tiendasDesdeAPI = null;
+let ticketMercadoPagoActual = null;
 
 let carrito = JSON.parse(localStorage.getItem("carritoMexa") || "[]");
 carrito = carrito.map(p => ({
@@ -49,6 +50,7 @@ function iniciarAplicacion() {
     /* Y tambien los pedidos y los favoritos */
     sincronizarPedidosDesdeAPI();
     sincronizarFavoritosDesdeAPI();
+    procesarRetornoMercadoPago();
 }
 
 /* Vuelve a pintar el catalogo ya con los datos de la base de datos */
@@ -1734,6 +1736,349 @@ function actualizarInformacionClienteCheckout() {
     panel.hidden = false;
 }
 
+function obtenerClaveDatosPagoCheckout() {
+    const sesion = obtenerSesionActual() || {};
+    const identificador = sesion.id || sesion.correo;
+    return identificador ? `checkoutSeguroMexa:${identificador}` : null;
+}
+
+function leerDatosPagoCheckout() {
+    const clave = obtenerClaveDatosPagoCheckout();
+    if (!clave) return null;
+
+    try {
+        return JSON.parse(localStorage.getItem(clave) || "null");
+    } catch (error) {
+        console.error("No se pudieron leer los datos guardados del checkout:", error);
+        mostrarNotificacionCuenta("No se pudieron leer tus datos guardados", "Puedes escribirlos nuevamente para continuar.", "❌");
+        return null;
+    }
+}
+
+function abrirFormularioPagoCheckout() {
+    const sesion = obtenerSesionActual() || {};
+    if (sesion.rol !== "usuario") {
+        finalizarPedidoDesdeResumen();
+        return;
+    }
+
+    const resumen = document.getElementById("checkoutResumenVista");
+    const vistaPago = document.getElementById("checkoutPagoVista");
+    if (!resumen || !vistaPago) return;
+
+    const cuenta = obtenerCuentas().find(item => String(item.id) === String(sesion.id)) || sesion;
+    const guardados = leerDatosPagoCheckout();
+    const nombre = `${cuenta.nombre || sesion.nombre || ""} ${cuenta.apellidos || sesion.apellidos || ""}`.trim();
+    vistaPago.innerHTML = `
+        <button class="cerrar-modal" type="button" aria-label="Volver al resumen" onclick="volverAResumenPagoCheckout()">×</button>
+        <span class="section-label">MERCADO MEXA · PAGO</span>
+        <h2>Datos para tu pedido</h2>
+        <p class="checkout-aviso">Confirma tus datos y continúa a Mercado Pago para completar el cobro de forma segura.</p>
+        <div class="checkout-pago-campos">
+            <label>Nombre completo
+                <input id="checkoutNombreCliente" type="text" autocomplete="name" maxlength="150" value="${escapeHTML(guardados?.nombre || nombre)}" required>
+            </label>
+            <label>Correo electrónico
+                <input id="checkoutCorreoCliente" type="email" autocomplete="email" maxlength="150" value="${escapeHTML(guardados?.correo || cuenta.correo || sesion.correo || "")}" required>
+            </label>
+            <label>Celular
+                <input id="checkoutTelefonoCliente" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" value="${escapeHTML(guardados?.telefono || cuenta.telefono || sesion.telefono || "")}" required>
+            </label>
+            <label class="checkout-guardar-datos">
+                <input id="checkoutGuardarDatos" type="checkbox" ${guardados ? "checked" : ""}>
+                <span>Guardar mis datos para la próxima compra</span>
+            </label>
+            <p class="checkout-pago-aviso">Mercado Pago solicitará los datos de pago en su página segura. Mercado Mexa no recibe ni guarda tu número de tarjeta o CVV.</p>
+            <div class="checkout-resumen-acciones">
+                <button class="btn-outline grande" type="button" onclick="volverAResumenPagoCheckout()">Volver</button>
+                <button id="checkoutContinuarPago" class="btn-naranja grande" type="button" onclick="confirmarDatosPagoCheckout()">Continuar con el pedido</button>
+            </div>
+        </div>
+    `;
+
+    resumen.hidden = true;
+    vistaPago.hidden = false;
+}
+
+function volverAResumenPagoCheckout() {
+    const resumen = document.getElementById("checkoutResumenVista");
+    const vistaPago = document.getElementById("checkoutPagoVista");
+    if (!resumen || !vistaPago) return;
+    vistaPago.hidden = true;
+    resumen.hidden = false;
+}
+
+async function confirmarDatosPagoCheckout() {
+    const vistaPago = document.getElementById("checkoutPagoVista");
+    const campos = [...vistaPago.querySelectorAll("input[required]")];
+    const campoInvalido = campos.find(campo => !campo.checkValidity());
+    if (campoInvalido) {
+        campoInvalido.reportValidity();
+        campoInvalido.focus();
+        return;
+    }
+
+    const datosContacto = {
+        nombre: document.getElementById("checkoutNombreCliente").value.trim(),
+        correo: document.getElementById("checkoutCorreoCliente").value.trim(),
+        telefono: document.getElementById("checkoutTelefonoCliente").value.trim()
+    };
+    const clave = obtenerClaveDatosPagoCheckout();
+    const guardarDatos = document.getElementById("checkoutGuardarDatos").checked;
+    try {
+        if (guardarDatos && clave) {
+            localStorage.setItem(clave, JSON.stringify(datosContacto));
+        } else if (clave) {
+            localStorage.removeItem(clave);
+        }
+    } catch (error) {
+        console.error("No se pudieron guardar los datos del checkout:", error);
+        mostrarNotificacionCuenta("No se pudieron guardar tus datos", "Inténtalo de nuevo o desmarca la opción para continuar sin guardarlos.", "❌");
+        return;
+    }
+
+    const form = document.getElementById("formCheckout");
+    if (!form || !haySesionActiva() || typeof API === "undefined") {
+        mostrarNotificacionCuenta("Pago no disponible", "El cobro en línea requiere iniciar sesión y tener conectado el servidor de Mercado Pago.", "❌");
+        return;
+    }
+
+    const boton = document.getElementById("checkoutContinuarPago");
+    if (boton) {
+        boton.disabled = true;
+        boton.textContent = "Conectando con Mercado Pago...";
+    }
+
+    const datosPedido = new FormData(form);
+    const modalidad = String(datosPedido.get("modalidad") || "pickup");
+    const tiendaId = datosPedido.get(modalidad === "envio" ? "tiendaEnvio" : "tiendaPickup");
+    const tiendaPedido = obtenerTiendasParaPedido().find(tienda => String(tienda.id) === String(tiendaId));
+    if (!tiendaPedido) {
+        if (boton) {
+            boton.disabled = false;
+            boton.textContent = "Continuar con el pedido";
+        }
+        mostrarNotificacionCuenta("Tienda no disponible", "Selecciona una tienda para continuar.");
+        return;
+    }
+
+    const direccion = modalidad === "envio"
+        ? [
+            form.elements.calle.value.trim(),
+            form.elements.colonia.value.trim(),
+            form.elements.municipio.value.trim(),
+            form.elements.codigoPostal.value.trim()
+        ].filter(Boolean).join(", ")
+        : tiendaPedido.direccion;
+
+    try {
+        const pedido = await API.pedidoPagar({
+            tienda: tiendaPedido.id,
+            modalidad,
+            direccion,
+            referencias: modalidad === "envio" ? form.elements.referencias.value.trim() : "",
+            cliente: datosContacto.nombre,
+            correo: datosContacto.correo,
+            telefono: datosContacto.telefono
+        });
+        if (!pedido.checkoutUrl) throw new Error("Mercado Pago no devolvió el enlace seguro de pago.");
+        window.location.assign(pedido.checkoutUrl);
+    } catch (error) {
+        if (boton) {
+            boton.disabled = false;
+            boton.textContent = "Continuar con el pedido";
+        }
+        mostrarNotificacionCuenta("No se pudo iniciar el pago", error.message, "❌");
+    }
+}
+
+async function procesarRetornoMercadoPago() {
+    const parametros = new URLSearchParams(window.location.search);
+    if (!parametros.has("mp_return")) return;
+
+    const paymentId = parametros.get("payment_id") || parametros.get("collection_id");
+    const folio = parametros.get("external_reference");
+    window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.hash}`);
+
+    const modal = document.getElementById("modalCheckout");
+    const contenido = document.getElementById("contenidoCheckout");
+    if (!modal || !contenido) return;
+    modal.classList.add("activa");
+
+    if (!paymentId || !folio || typeof API === "undefined") {
+        contenido.innerHTML = `
+            <div class="ticket-confirmado">
+                <h2>Pago no confirmado</h2>
+                <p>No se recibió la confirmación del pago. Revisa el estado en tu cuenta o inténtalo de nuevo.</p>
+                <button class="btn-naranja grande" type="button" onclick="document.getElementById('modalCheckout').classList.remove('activa')">Cerrar</button>
+            </div>
+        `;
+        return;
+    }
+
+    contenido.innerHTML = `
+        <div class="ticket-confirmado">
+            <span class="section-label">MERCADO PAGO</span>
+            <h2>Verificando tu pago...</h2>
+            <p>Espera un momento mientras confirmamos la operación.</p>
+        </div>
+    `;
+
+    try {
+        const pedido = await API.pedidoConfirmarPago(folio, paymentId);
+        ticketMercadoPagoActual = pedido;
+        contenido.innerHTML = `
+            <button class="cerrar-modal" type="button" aria-label="Cerrar" onclick="document.getElementById('modalCheckout').classList.remove('activa')">×</button>
+            <div class="ticket-confirmado">
+                <span class="section-label">PAGO CONFIRMADO</span>
+                <h2>¡Gracias por tu compra!</h2>
+                <p>Pedido <strong>${escapeHTML(pedido.folio)}</strong> · Total <strong>${formatearPrecio(Number(pedido.total))}</strong></p>
+                <p>${escapeHTML(pedido.modalidad === "pickup" ? "Recoger en tienda" : "Envío a domicilio")} · ${escapeHTML(pedido.tienda || "")}</p>
+                <div class="ticket-codigo">
+                    <span>CÓDIGO ÚNICO PARA ENTREGAR AL REPARTIDOR</span>
+                    <strong>${escapeHTML(pedido.codigoEntrega)}</strong>
+                </div>
+                <p>Muéstrale este código al repartidor para confirmar la entrega.</p>
+                <div class="checkout-resumen-acciones">
+                    <button class="btn-outline grande" type="button" onclick="descargarTicketMercadoPago()">Descargar ticket PDF</button>
+                    <button class="btn-naranja grande" type="button" onclick="compartirTicketWhatsApp()">Compartir por WhatsApp</button>
+                </div>
+                <small>WhatsApp se abrirá con el resumen del pedido. Adjunta el PDF que acabas de descargar para enviarlo.</small>
+            </div>
+        `;
+        sincronizarCarritoDesdeAPI();
+        sincronizarPedidosDesdeAPI();
+    } catch (error) {
+        contenido.innerHTML = `
+            <div class="ticket-confirmado">
+                <span class="section-label">MERCADO PAGO</span>
+                <h2>No pudimos confirmar el pago</h2>
+                <p>${escapeHTML(error.message)}</p>
+                <p>No compartas un código de entrega hasta que el pago aparezca como confirmado en tu cuenta.</p>
+                <button class="btn-naranja grande" type="button" onclick="document.getElementById('modalCheckout').classList.remove('activa')">Cerrar</button>
+            </div>
+        `;
+    }
+}
+
+function textoPlanoTicket(valor) {
+    return String(valor ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\x20-\x7E]/g, "")
+        .replace(/\\/g, "\\\\")
+        .replace(/\(/g, "\\(")
+        .replace(/\)/g, "\\)");
+}
+
+function crearPdfTicketMercadoPago(pedido) {
+    const filas = [
+        "MERCADO MEXA - COMPROBANTE DE COMPRA",
+        `Pedido: ${pedido.folio}`,
+        `Fecha: ${pedido.fecha || new Date().toLocaleString("es-MX")}`,
+        `Cliente: ${pedido.cliente || ""}`,
+        `Telefono: ${pedido.telefono || ""}`,
+        `Entrega: ${pedido.modalidad === "pickup" ? "Recoger en tienda" : "Envio a domicilio"}`,
+        `Tienda: ${pedido.tienda || ""}`,
+        `Direccion: ${pedido.direccion || ""}`,
+        "Estado de pago: PAGADO",
+        "",
+        "PRODUCTOS"
+    ];
+    (pedido.items || []).forEach(item => {
+        filas.push(`${item.cantidad} x ${item.nombre} - $${Number(item.subtotal ?? item.precio * item.cantidad).toFixed(2)}`);
+    });
+    filas.push("", `TOTAL PAGADO: $${Number(pedido.total).toFixed(2)}`, "", "CODIGO UNICO DE ENTREGA", String(pedido.codigoEntrega || ""), "", "Muestra este codigo al repartidor para confirmar que recibiste tu pedido.");
+
+    const paginas = [];
+    const filasAjustadas = filas.flatMap(fila => {
+        if (!fila) return [""];
+        const salida = [];
+        for (let inicio = 0; inicio < fila.length; inicio += 78) {
+            salida.push(fila.slice(inicio, inicio + 78));
+        }
+        return salida;
+    });
+    for (let inicio = 0; inicio < filasAjustadas.length; inicio += 34) {
+        paginas.push(filasAjustadas.slice(inicio, inicio + 34));
+    }
+
+    const objetos = [
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        `<< /Type /Pages /Kids [${paginas.map((_, indice) => `${4 + indice * 2} 0 R`).join(" ")}] /Count ${paginas.length} >>`,
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+    ];
+    paginas.forEach((lineas, indice) => {
+        const contenidoId = 5 + indice * 2;
+        const comandos = ["BT", "/F1 11 Tf", "14 TL", "45 790 Td"];
+        lineas.forEach((linea, lineaIndice) => {
+            if (lineaIndice) comandos.push("T*");
+            comandos.push(`(${textoPlanoTicket(linea).slice(0, 110)}) Tj`);
+        });
+        comandos.push("ET");
+        const flujo = comandos.join("\n");
+        objetos.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contenidoId} 0 R >>`);
+        objetos.push(`<< /Length ${flujo.length} >>\nstream\n${flujo}\nendstream`);
+    });
+
+    let pdf = "%PDF-1.4\n";
+    const offsets = [0];
+    objetos.forEach((objeto, indice) => {
+        offsets.push(pdf.length);
+        pdf += `${indice + 1} 0 obj\n${objeto}\nendobj\n`;
+    });
+    const xrefOffset = pdf.length;
+    pdf += `xref\n0 ${objetos.length + 1}\n0000000000 65535 f \n`;
+    offsets.slice(1).forEach(offset => {
+        pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
+    });
+    pdf += `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+    return new Blob([pdf], { type: "application/pdf" });
+}
+
+function descargarTicketMercadoPago() {
+    if (!ticketMercadoPagoActual) return;
+    const archivo = crearPdfTicketMercadoPago(ticketMercadoPagoActual);
+    const enlace = document.createElement("a");
+    enlace.href = URL.createObjectURL(archivo);
+    enlace.download = `ticket-${ticketMercadoPagoActual.folio}.pdf`;
+    enlace.click();
+    setTimeout(() => URL.revokeObjectURL(enlace.href), 1000);
+}
+
+async function compartirTicketWhatsApp() {
+    if (!ticketMercadoPagoActual) return;
+    const pedido = ticketMercadoPagoActual;
+    const mensaje = [
+        `Ticket Mercado Mexa - pedido ${pedido.folio}`,
+        `Total pagado: ${formatearPrecio(Number(pedido.total))}`,
+        `Codigo de entrega: ${pedido.codigoEntrega}`,
+        "Adjunto el ticket PDF de mi pedido."
+    ].join("\n");
+    const archivoPdf = crearPdfTicketMercadoPago(pedido);
+    const archivo = typeof File === "function"
+        ? new File([archivoPdf], `ticket-${pedido.folio}.pdf`, { type: "application/pdf" })
+        : null;
+
+    if (archivo && navigator.canShare?.({ files: [archivo] }) && navigator.share) {
+        try {
+            await navigator.share({
+                files: [archivo],
+                title: `Ticket ${pedido.folio}`,
+                text: mensaje
+            });
+        } catch (error) {
+            if (error.name !== "AbortError") {
+                mostrarNotificacionCuenta("No se pudo compartir el ticket", error.message, "❌");
+            }
+        }
+        return;
+    }
+
+    descargarTicketMercadoPago();
+    window.open(`https://wa.me/?text=${encodeURIComponent(mensaje)}`, "_blank", "noopener");
+}
+
 async function confirmarPedidoLista(evento) {
     evento.preventDefault();
 
@@ -1802,23 +2147,17 @@ async function confirmarPedidoLista(evento) {
                 <span>${escapeHTML(tiendaPedido.nombre)} · ${escapeHTML(direccion)}</span>
             </div>
             <div id="checkoutClientePago" class="checkout-cliente-pago" hidden></div>
-            <fieldset class="checkout-resumen-pagos">
-                <legend>Forma de pago</legend>
-                <label><input type="radio" name="pago" value="Efectivo al recibir" checked> Efectivo al recibir</label>
-                <label><input type="radio" name="pago" value="Transferencia bancaria"> Transferencia bancaria</label>
-                <label><input type="radio" name="pago" value="Tarjeta al recibir" onchange="actualizarOpcionesTarjetaCheckout()"> Tarjeta al recibir</label>
-                <div id="checkoutTiposTarjeta" class="checkout-tipos-tarjeta" hidden>
-                    <span>Tipo de tarjeta</span>
-                    <label><input type="radio" name="tipoTarjeta" value="Débito" checked> Débito</label>
-                    <label><input type="radio" name="tipoTarjeta" value="Crédito"> Crédito</label>
-                </div>
-            </fieldset>
+            <div class="checkout-resumen-pagos">
+                <strong>Pago seguro en línea</strong>
+                <span>Al continuar, completarás el cobro en Mercado Pago.</span>
+            </div>
             <div class="checkout-resumen-acciones">
                 <button class="btn-outline grande" type="button" onclick="volverAEditarPedido()">Volver</button>
-                <button class="btn-naranja grande" type="button" onclick="finalizarPedidoDesdeResumen()">Pagar ahora (${cantidadArticulos})</button>
+                <button class="btn-naranja grande" type="button" onclick="abrirFormularioPagoCheckout()">Pagar ahora (${cantidadArticulos})</button>
             </div>
-            <small class="checkout-resumen-nota">Pago en línea no disponible todavía. Al continuar se registra el pedido y se coordina el cobro con la tienda; no se realizará ningún cargo ahora.</small>
+            <small class="checkout-resumen-nota">El pedido se confirma cuando Mercado Pago autorice el pago. El código de entrega se mostrará después de la confirmación.</small>
         `;
+        resumen.insertAdjacentHTML("afterend", '<section id="checkoutPagoVista" class="checkout-pago-vista" hidden></section>');
         document.getElementById("checkoutFormularioVista").hidden = true;
         resumen.hidden = false;
         actualizarInformacionClienteCheckout();
@@ -1977,6 +2316,7 @@ function volverAEditarPedido() {
     const form = document.getElementById("formCheckout");
     if (!form) return;
     delete form.dataset.pedidoEnRevision;
+    document.getElementById("checkoutPagoVista")?.remove();
     document.getElementById("checkoutResumenVista").hidden = true;
     document.getElementById("checkoutFormularioVista").hidden = false;
 }
