@@ -54,9 +54,27 @@ function guardarSesion(cuenta) {
     localStorage.setItem("sesionMexa", JSON.stringify(sesion));
 }
 
-function cerrarSesionMexa() {
+async function cerrarSesionMexa() {
+    /* Notificar al servidor para destruir la cookie de sesion PHP.
+       Si no se hace, al recargar la pagina restaurarSesionDesdeAPI()
+       volveria a poner la cuenta en el navegador. */
+    if (typeof API !== "undefined") {
+        try {
+            await API.logout();
+        } catch (e) { /* no critico */ }
+    }
+
     localStorage.removeItem("sesionMexa");
+    localStorage.removeItem("carritoMexa");
+    localStorage.removeItem("favoritosMexa");
+
+    /* El carrito y los favoritos ya viven en MySQL, aqui solo se vacian
+       las copias locales para que no se repitan al volver a entrar. */
+    carrito = [];
+    favoritosMexa = [];
+
     actualizarBotonCuenta();
+    actualizarContador();
 }
 
 function obtenerPedidosMexa() {
@@ -616,13 +634,8 @@ function mostrarCuentaPorRol(sesion) {
     });
 
     document.getElementById("btnCerrarSesionMexa")?.addEventListener("click", async () => {
-        // Si hay backend, la cookie de sesion PHP tambien se cierra
-        if (typeof API !== "undefined") {
-            try {
-                await API.logout();
-            } catch (e) {}
-        }
-        cerrarSesionMexa();
+        /* cerrarSesionMexa() ya llama a API.logout() y limpia el estado local */
+        await cerrarSesionMexa();
         restaurarCuentaInicial();
         modalCuenta?.classList.remove("activa");
         mostrarNotificacionCuenta("Sesión cerrada", "Has salido de tu cuenta correctamente.", "👋");
@@ -899,6 +912,11 @@ async function restaurarSesionDesdeAPI() {
             actualizarBotonCuenta();
             return true;
         }
+
+        /* El servidor no tiene sesion, asi que la del navegador esta
+           caducada. Se borra para no mostrar una cuenta que ya no existe. */
+        localStorage.removeItem("sesionMexa");
+        actualizarBotonCuenta();
     } catch (e) {}
     return false;
 }
@@ -1144,11 +1162,16 @@ async function arrancarCuentas() {
     if (cuentasIniciadas) return;
     cuentasIniciadas = true;
 
-    await inicializarCuentasDemo();
+    const hayServidor = await backendDisponible();
+
+    /* Las cuentas demo solo se siembran en el navegador cuando no hay
+       MySQL. Con servidor manda la tabla usuarios. */
+    if (!hayServidor) await inicializarCuentasDemo();
+
     iniciarModuloCuentas();
 
     // Si hay servidor, la sesion real manda sobre el localStorage
-    if (await restaurarSesionDesdeAPI()) {
+    if (hayServidor && await restaurarSesionDesdeAPI()) {
         const sesion = obtenerSesionActual();
         if (sesion) {
             actualizarBotonCuenta();
