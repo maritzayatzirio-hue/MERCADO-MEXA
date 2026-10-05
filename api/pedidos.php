@@ -319,8 +319,20 @@ function crearPedido(PDO $bd, array $usuario, array $datos) {
         fallar('Falta la direccion de entrega');
     }
 
-    if (mb_strlen($metodoPago) > 60) {
-        $metodoPago = mb_substr($metodoPago, 0, 60);
+    /* Las formas de pago que ofrece el formulario de checkout, tal
+       como js/script.js las arma. El navegador podria mandar cualquier
+       texto, asi que se revisa contra esta lista antes de guardar.
+       Al validar aqui, el recorte de 60 caracteres ya sobra. */
+    $metodosPago = [
+        'Efectivo al recibir',
+        'Transferencia bancaria',
+        'Tarjeta al recibir',
+        'Tarjeta de Débito al recibir',
+        'Tarjeta de Crédito al recibir',
+    ];
+
+    if (!in_array($metodoPago, $metodosPago, true)) {
+        fallar('Esa forma de pago no existe');
     }
 
     /* La tienda se busca por su slug */
