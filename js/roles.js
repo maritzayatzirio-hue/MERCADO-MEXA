@@ -693,30 +693,61 @@ window.cambiarRolSesion = function(nuevoRol) {
 };
 
 // Chofer completa entrega
-window.completarEntregaChofer = function(pedidoId) {
+window.completarEntregaChofer = async function(pedidoId) {
+    const sesion = obtenerSesionActual();
+    if (!sesion) return;
+
     const pedidos = obtenerPedidosMexa();
     const pedido = pedidos.find(p => p.id === pedidoId);
     if (!pedido) return;
 
-    if (pedido.codigoEntrega) {
-        const codigoIngresado = document.getElementById(`codigoEntrega-${pedido.id}`)?.value.trim();
-        if (codigoIngresado !== pedido.codigoEntrega) {
-            mostrarNotificacionCuenta("Código incorrecto", "Pide al cliente el código de entrega de su ticket.", "⚠️");
+    const codigoIngresado = (document.getElementById(`codigoEntrega-${pedido.id}`)?.value || "").trim();
+
+    /* Con PHP disponible el cambio se guarda en MySQL, que es la fuente
+       de verdad. El codigo lo revisa el servidor, no el navegador. */
+    if (typeof API !== "undefined" && await backendDisponible()) {
+        try {
+            const r = await API.pedidoEntregar(pedido.id, codigoIngresado);
+
+            sesion.entregas = (sesion.entregas || 0) + 1;
+            guardarSesion(sesion);
+
+            await sincronizarPedidosDesdeAPI();
+            mostrarCuentaPorRol(sesion);
+
+            const minutos = r?.pedido?.tiempoMin;
+            mostrarNotificacionCuenta(
+                "¡Entrega completada!",
+                `El pedido #${pedidoId} quedo entregado en la base de datos` +
+                    (typeof minutos === "number" ? ` en ${minutos} min.` : "."),
+                "✅"
+            );
+            return;
+
+        } catch (e) {
+            mostrarNotificacionCuenta("No se pudo registrar la entrega", e.message, "⚠️");
             return;
         }
+    }
+
+    /* Sin PHP (pagina abierta con Live Server) se usa el respaldo local */
+    if (pedido.codigoEntrega && codigoIngresado !== pedido.codigoEntrega) {
+        mostrarNotificacionCuenta("Código incorrecto", "Pide al cliente el código de entrega de su ticket.", "⚠️");
+        return;
     }
 
     pedido.estado = "entregado";
     guardarPedidosMexa(pedidos);
 
-    const sesion = obtenerSesionActual();
-    if (sesion) {
-        sesion.entregas = (sesion.entregas || 0) + 1;
-        guardarSesion(sesion);
-    }
+    sesion.entregas = (sesion.entregas || 0) + 1;
+    guardarSesion(sesion);
 
     mostrarCuentaPorRol(sesion);
-    mostrarNotificacionCuenta("¡Entrega completada!", `El pedido #${pedidoId} fue marcado como entregado correctamente.`, "✅");
+    mostrarNotificacionCuenta(
+        "¡Entrega completada!",
+        `El pedido #${pedidoId} fue marcado como entregado, pero solo en este navegador. Abre el sitio en http://localhost/mercado-mexa/ para que se guarde en MySQL.`,
+        "⚠️"
+    );
 };
 
 // Admin cambia el rol de un usuario registrado

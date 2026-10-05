@@ -4,8 +4,13 @@
    Confirma pedidos y los guarda en MySQL.
 
    Uso:
-     GET  api/pedidos.php                      -> lista los pedidos del usuario
+     GET  api/pedidos.php                      -> lista los pedidos
+                                                  (los suyos; el chofer ve los
+                                                   que tiene asignados y el admin
+                                                   ve todos)
      POST api/pedidos.php {"accion":"crear", ...datos de entrega...}
+     POST api/pedidos.php {"accion":"entregar", "folio":"MX-XXXXXX",
+                           "codigo":"123456"}
 
    Datos que recibe al crear:
      tienda      -> slug de la tienda (ej. "neto-tlaxiaco-hidalgo")
@@ -13,6 +18,10 @@
      direccion   -> texto de la direccion
      referencias -> texto opcional
      metodoPago  -> texto
+
+   Datos que recibe al entregar (solo chofer o admin):
+     folio       -> folio del pedido, tal como aparece en la app
+     codigo      -> codigo de 6 digitos que se le dio al cliente
 
    IMPORTANTE: los productos y los precios NO se reciben del
    navegador. Se leen del carrito que esta en la tabla carrito.
@@ -54,27 +63,54 @@ function generarCodigoEntrega() {
     return (string) random_int(100000, 999999);
 }
 
+/* Arma la lista de pedidos, con sus productos.
+   Cada rol ve algo distinto:
+     - usuario: solo los suyos
+     - chofer:  los que tiene asignados
+     - admin:   todos
+   El filtro se arma una vez y se usa en las dos consultas. */
+function filtroPedidos(string $rol, int $usuarioId, array &$params) {
+    if ($rol === 'chofer') {
+        $params = [$usuarioId];
+        return 'p.chofer_id = ?';
+    }
+
+    if ($rol === 'admin') {
+        $params = [];
+        return '1 = 1';
+    }
+
+    $params = [$usuarioId];
+    return 'p.usuario_id = ?';
+}
+
 /* Arma la lista de pedidos del usuario, con sus productos */
-function listarPedidos(PDO $bd, $usuarioId) {
+function listarPedidos(PDO $bd, int $usuarioId, string $rol) {
+    $params = [];
+    $filtro = filtroPedidos($rol, $usuarioId, $params);
+
     $q = $bd->prepare(
-        'SELECT p.*, t.nombre AS tienda_nombre, t.ciudad AS tienda_ciudad
+        'SELECT p.*, t.nombre AS tienda_nombre, t.ciudad AS tienda_ciudad,
+                u.nombre AS chofer_nombre
          FROM pedidos p
          LEFT JOIN tiendas t ON t.id = p.tienda_id
-         WHERE p.usuario_id = ?
+         LEFT JOIN usuarios u ON u.id = p.chofer_id
+         WHERE ' . $filtro . '
          ORDER BY p.pedido_en DESC, p.id DESC'
     );
-    $q->execute([$usuarioId]);
+    $q->execute($params);
     $pedidos = $q->fetchAll();
 
     /* Trae todos los items de una vez, en vez de una consulta por pedido */
     $itemsQ = $bd->prepare(
-        'SELECT pedido_id, producto_nombre, producto_icono, cantidad,
-                precio_unitario, subtotal
-         FROM pedido_items
-         WHERE pedido_id IN (SELECT id FROM pedidos WHERE usuario_id = ?)
-         ORDER BY id'
+        'SELECT i.pedido_id, i.producto_nombre, i.producto_icono, i.cantidad,
+                i.precio_unitario, i.subtotal
+         FROM pedido_items i
+         INNER JOIN pedidos p ON p.id = i.pedido_id
+         WHERE ' . $filtro . '
+         ORDER BY i.id'
     );
-    $itemsQ->execute([$usuarioId]);
+    $itemsQ->execute($params);
 
     $itemsPorPedido = [];
     foreach ($itemsQ->fetchAll() as $item) {
@@ -106,6 +142,7 @@ function listarPedidos(PDO $bd, $usuarioId) {
             'fecha'         => $p['pedido_en'],
             'entregadoEn'   => $p['entregado_en'],
             'chofer'        => $p['chofer_id'] ? (int) $p['chofer_id'] : null,
+            'choferNombre'  => $p['chofer_nombre'],
             'items'         => $itemsPorPedido[$p['id']] ?? [],
         ];
     }
@@ -121,22 +158,23 @@ try {
 
 $usuario = usuarioActual();
 $usuarioId = (int) $usuario['id'];
+$rol = (string) ($usuario['rol'] ?? 'usuario');
 
 /* ------------------------------------------------------------
    GET: lista de pedidos
------------------------------------------------------------- */
+   ------------------------------------------------------------ */
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode([
         'ok'      => true,
         'accion'  => 'listar',
-        'pedidos' => listarPedidos($bd, $usuarioId),
+        'pedidos' => listarPedidos($bd, $usuarioId, $rol),
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 /* ------------------------------------------------------------
-   POST: crear pedido
------------------------------------------------------------- */
+   POST: crear o entregar un pedido
+   ------------------------------------------------------------ */
 $crudo = file_get_contents('php://input');
 $crudo = preg_replace('/^\xEF\xBB\xBF/', '', (string) $crudo);
 $datos = json_decode($crudo, true);
@@ -147,160 +185,265 @@ if (!is_array($datos)) {
 
 $accion = (string) ($datos['accion'] ?? '');
 
-if ($accion !== 'crear') {
-    fallar('Accion desconocida');
+if ($accion === 'crear') {
+    crearPedido($bd, $usuario, $datos);
+    exit;
 }
 
-$slug        = trim((string) ($datos['tienda'] ?? ''));
-$modalidad   = (string) ($datos['modalidad'] ?? '');
-$direccion   = trim((string) ($datos['direccion'] ?? ''));
-$referencias = trim((string) ($datos['referencias'] ?? ''));
-$metodoPago  = trim((string) ($datos['metodoPago'] ?? 'Efectivo al recibir'));
-
-if ($slug === '') {
-    fallar('Falta la tienda del pedido');
+if ($accion === 'entregar') {
+    entregarPedido($bd, $usuario, $datos);
+    exit;
 }
 
-if (!in_array($modalidad, ['pickup', 'envio'], true)) {
-    fallar('La modalidad debe ser pickup o envio');
-}
+fallar('Accion desconocida');
 
-if ($direccion === '') {
-    fallar('Falta la direccion de entrega');
-}
-
-if (mb_strlen($metodoPago) > 60) {
-    $metodoPago = mb_substr($metodoPago, 0, 60);
-}
-
-/* La tienda se busca por su slug */
-$tiendaQ = $bd->prepare('SELECT id, nombre, direccion FROM tiendas WHERE slug = ? AND activo = 1 LIMIT 1');
-$tiendaQ->execute([$slug]);
-$tienda = $tiendaQ->fetch();
-
-if (!$tienda) {
-    fallar('Esa tienda no existe', 404);
-}
-
-/* --- El carrito se lee de la base de datos, no del navegador --- */
-$carritoQ = $bd->prepare(
-    'SELECT car.producto_id, car.cantidad, car.precio_unitario,
-            pr.nombre, pr.icono
-     FROM carrito car
-     INNER JOIN productos pr ON pr.id = car.producto_id
-     WHERE car.usuario_id = ?
-     ORDER BY car.agregado_en'
-);
-$carritoQ->execute([$usuarioId]);
-$items = $carritoQ->fetchAll();
-
-if (!$items) {
-    fallar('Tu carrito esta vacio', 400);
-}
-
-/* Total y validacion de cantidades */
-$total = 0.0;
-foreach ($items as $item) {
-    $cantidad = (int) $item['cantidad'];
-    $precio   = (float) $item['precio_unitario'];
-
-    if ($cantidad < 1 || $cantidad > 99) {
-        fallar('Hay una cantidad invalida en el carrito');
+/* ------------------------------------------------------------
+   Marca un pedido como entregado y deja el registro en entregas.
+   El cliente tiene que decir el codigo que salio en su pedido:
+   asi se demuestra que la entrega si ocurrio.
+   ------------------------------------------------------------ */
+function entregarPedido(PDO $bd, array $usuario, array $datos) {
+    if (($usuario['rol'] ?? '') !== 'chofer' && ($usuario['rol'] ?? '') !== 'admin') {
+        fallar('Solo un chofer puede marcar un pedido como entregado', 403);
     }
 
-    $total += $cantidad * $precio;
+    $usuarioId = (int) $usuario['id'];
+    $folio  = trim((string) ($datos['folio'] ?? ''));
+    $codigo = trim((string) ($datos['codigo'] ?? ''));
+
+    if ($folio === '') {
+        fallar('Falta el folio del pedido');
+    }
+
+    $buscar = $bd->prepare('SELECT * FROM pedidos WHERE folio = ? LIMIT 1');
+    $buscar->execute([$folio]);
+    $pedido = $buscar->fetch();
+
+    if (!$pedido) {
+        fallar('Ese pedido no existe', 404);
+    }
+
+    /* Un chofer solo puede entregar lo que tiene asignado */
+    if ($usuario['rol'] === 'chofer' && (int) $pedido['chofer_id'] !== $usuarioId) {
+        fallar('Ese pedido no esta asignado a ti', 403);
+    }
+
+    if ($pedido['estado'] === 'entregado') {
+        fallar('Ese pedido ya fue entregado', 409);
+    }
+
+    if ($codigo === '' || !hash_equals((string) $pedido['codigo_entrega'], $codigo)) {
+        fallar('El codigo de entrega no coincide', 403);
+    }
+
+    $pedidoId = (int) $pedido['id'];
+
+    /* --- Transaccion: o queda todo registrado, o nada --- */
+    $bd->beginTransaction();
+
+    try {
+        /* De cuanto tardo el chofer, en minutos */
+        $minutos = (int) $bd->query(
+            'SELECT TIMESTAMPDIFF(MINUTE, pedido_en, NOW()) FROM pedidos WHERE id = ' . $pedidoId
+        )->fetchColumn();
+        $minutos = max($minutos, 0);
+
+        $actualizar = $bd->prepare(
+            'UPDATE pedidos
+             SET estado = "entregado", chofer_id = ?, entregado_en = NOW()
+             WHERE id = ?'
+        );
+        $actualizar->execute([$usuarioId, $pedidoId]);
+
+        /* entregado_en se deja que lo ponga MySQL (DEFAULT CURRENT_TIMESTAMP) */
+        $registrar = $bd->prepare(
+            'INSERT INTO entregas (pedido_id, chofer_id, codigo_entrega, tiempo_entrega_min)
+             VALUES (?, ?, ?, ?)'
+        );
+        $registrar->execute([$pedidoId, $usuarioId, $pedido['codigo_entrega'], $minutos]);
+
+        /* Suma una entrega al chofer */
+        $sumar = $bd->prepare('UPDATE usuarios SET entregas = entregas + 1 WHERE id = ?');
+        $sumar->execute([$usuarioId]);
+
+        $bd->commit();
+
+    } catch (Throwable $e) {
+        $bd->rollBack();
+        fallar('No se pudo registrar la entrega. Intenta de nuevo.', 500);
+    }
+
+    echo json_encode([
+        'ok'     => true,
+        'accion' => 'entregar',
+        'pedido' => [
+            'id'         => $pedidoId,
+            'folio'      => $pedido['folio'],
+            'estado'     => 'entregado',
+            'entregadoEn' => gmdate('Y-m-d H:i:s'),
+            'tiempoMin'  => $minutos,
+        ],
+    ], JSON_UNESCAPED_UNICODE);
 }
 
-$total = round($total, 2);
 
-if ($total <= 0) {
-    fallar('El total del pedido no es valido');
-}
+/* ------------------------------------------------------------
+   Crea el pedido con lo que hay en el carrito del usuario
+   ------------------------------------------------------------ */
+function crearPedido(PDO $bd, array $usuario, array $datos) {
+    $usuarioId = (int) $usuario['id'];
 
-/* --- Transaccion: o se guarda todo, o no se guarda nada --- */
-$bd->beginTransaction();
+    $slug        = trim((string) ($datos['tienda'] ?? ''));
+    $modalidad   = (string) ($datos['modalidad'] ?? '');
+    $direccion   = trim((string) ($datos['direccion'] ?? ''));
+    $referencias = trim((string) ($datos['referencias'] ?? ''));
+    $metodoPago  = trim((string) ($datos['metodoPago'] ?? 'Efectivo al recibir'));
 
-try {
-    $folio = generarFolio();
-    $codigo = generarCodigoEntrega();
+    if ($slug === '') {
+        fallar('Falta la tienda del pedido');
+    }
 
-    $nombreCompleto = trim(
-        ($usuario['nombre'] ?? '') . ' ' . ($usuario['apellidos'] ?? '')
+    if (!in_array($modalidad, ['pickup', 'envio'], true)) {
+        fallar('La modalidad debe ser pickup o envio');
+    }
+
+    if ($direccion === '') {
+        fallar('Falta la direccion de entrega');
+    }
+
+    if (mb_strlen($metodoPago) > 60) {
+        $metodoPago = mb_substr($metodoPago, 0, 60);
+    }
+
+    /* La tienda se busca por su slug */
+    $tiendaQ = $bd->prepare('SELECT id, nombre, direccion FROM tiendas WHERE slug = ? AND activo = 1 LIMIT 1');
+    $tiendaQ->execute([$slug]);
+    $tienda = $tiendaQ->fetch();
+
+    if (!$tienda) {
+        fallar('Esa tienda no existe', 404);
+    }
+
+    /* --- El carrito se lee de la base de datos, no del navegador --- */
+    $carritoQ = $bd->prepare(
+        'SELECT car.producto_id, car.cantidad, car.precio_unitario,
+                pr.nombre, pr.icono
+         FROM carrito car
+         INNER JOIN productos pr ON pr.id = car.producto_id
+         WHERE car.usuario_id = ?
+         ORDER BY car.agregado_en'
     );
-    $telefono = (string) ($usuario['telefono'] ?? '');
+    $carritoQ->execute([$usuarioId]);
+    $items = $carritoQ->fetchAll();
 
-    $pedidoQ = $bd->prepare(
-        'INSERT INTO pedidos
-            (folio, usuario_id, tienda_id, modalidad, estado,
-             cliente_nombre, cliente_telefono, direccion, referencias,
-             metodo_pago, codigo_entrega, total)
-         VALUES (?, ?, ?, ?, "pendiente", ?, ?, ?, ?, ?, ?, ?)'
-    );
-    $pedidoQ->execute([
-        $folio,
-        $usuarioId,
-        (int) $tienda['id'],
-        $modalidad,
-        $nombreCompleto !== '' ? $nombreCompleto : 'Cliente',
-        $telefono,
-        $direccion,
-        $referencias !== '' ? $referencias : null,
-        $metodoPago,
-        $codigo,
-        $total,
-    ]);
+    if (!$items) {
+        fallar('Tu carrito esta vacio', 400);
+    }
 
-    $pedidoId = (int) $bd->lastInsertId();
-
-    $itemQ = $bd->prepare(
-        'INSERT INTO pedido_items
-            (pedido_id, producto_id, producto_nombre, producto_icono,
-             cantidad, precio_unitario, subtotal)
-         VALUES (?, ?, ?, ?, ?, ?, ?)'
-    );
-
+    /* Total y validacion de cantidades */
+    $total = 0.0;
     foreach ($items as $item) {
         $cantidad = (int) $item['cantidad'];
         $precio   = (float) $item['precio_unitario'];
 
-        $itemQ->execute([
-            $pedidoId,
-            (int) $item['producto_id'],
-            $item['nombre'],
-            $item['icono'],
-            $cantidad,
-            $precio,
-            round($cantidad * $precio, 2),
-        ]);
+        if ($cantidad < 1 || $cantidad > 99) {
+            fallar('Hay una cantidad invalida en el carrito');
+        }
+
+        $total += $cantidad * $precio;
     }
 
-    /* El carrito se vacia porque sus productos ya son un pedido */
-    $vaciar = $bd->prepare('DELETE FROM carrito WHERE usuario_id = ?');
-    $vaciar->execute([$usuarioId]);
+    $total = round($total, 2);
 
-    $bd->commit();
+    if ($total <= 0) {
+        fallar('El total del pedido no es valido');
+    }
 
-} catch (Throwable $e) {
-    $bd->rollBack();
-    fallar('No se pudo guardar el pedido. Intenta de nuevo.', 500);
+    /* --- Transaccion: o se guarda todo, o no se guarda nada --- */
+    $bd->beginTransaction();
+
+    try {
+        $folio = generarFolio();
+        $codigo = generarCodigoEntrega();
+
+        $nombreCompleto = trim(
+            ($usuario['nombre'] ?? '') . ' ' . ($usuario['apellidos'] ?? '')
+        );
+        $telefono = (string) ($usuario['telefono'] ?? '');
+
+        $pedidoQ = $bd->prepare(
+            'INSERT INTO pedidos
+                (folio, usuario_id, tienda_id, modalidad, estado,
+                 cliente_nombre, cliente_telefono, direccion, referencias,
+                 metodo_pago, codigo_entrega, total)
+             VALUES (?, ?, ?, ?, "pendiente", ?, ?, ?, ?, ?, ?, ?)'
+        );
+        $pedidoQ->execute([
+            $folio,
+            $usuarioId,
+            (int) $tienda['id'],
+            $modalidad,
+            $nombreCompleto !== '' ? $nombreCompleto : 'Cliente',
+            $telefono,
+            $direccion,
+            $referencias !== '' ? $referencias : null,
+            $metodoPago,
+            $codigo,
+            $total,
+        ]);
+
+        $pedidoId = (int) $bd->lastInsertId();
+
+        $itemQ = $bd->prepare(
+            'INSERT INTO pedido_items
+                (pedido_id, producto_id, producto_nombre, producto_icono,
+                 cantidad, precio_unitario, subtotal)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
+        );
+
+        foreach ($items as $item) {
+            $cantidad = (int) $item['cantidad'];
+            $precio   = (float) $item['precio_unitario'];
+
+            $itemQ->execute([
+                $pedidoId,
+                (int) $item['producto_id'],
+                $item['nombre'],
+                $item['icono'],
+                $cantidad,
+                $precio,
+                round($cantidad * $precio, 2),
+            ]);
+        }
+
+        /* El carrito se vacia porque sus productos ya son un pedido */
+        $vaciar = $bd->prepare('DELETE FROM carrito WHERE usuario_id = ?');
+        $vaciar->execute([$usuarioId]);
+
+        $bd->commit();
+
+    } catch (Throwable $e) {
+        $bd->rollBack();
+        fallar('No se pudo guardar el pedido. Intenta de nuevo.', 500);
+    }
+
+    echo json_encode([
+        'ok'     => true,
+        'accion' => 'crear',
+        'pedido' => [
+            'id'            => $pedidoId,
+            'folio'         => $folio,
+            'tienda'        => $tienda['nombre'],
+            'modalidad'     => $modalidad,
+            'estado'        => 'pendiente',
+            'total'         => $total,
+            'codigoEntrega' => $codigo,
+            'items'         => array_map(fn($i) => [
+                'nombre'   => $i['nombre'],
+                'icono'    => $i['icono'],
+                'cantidad' => (int) $i['cantidad'],
+                'precio'   => (float) $i['precio_unitario'],
+            ], $items),
+        ],
+    ], JSON_UNESCAPED_UNICODE);
 }
-
-echo json_encode([
-    'ok'     => true,
-    'accion' => 'crear',
-    'pedido' => [
-        'id'            => $pedidoId,
-        'folio'         => $folio,
-        'tienda'        => $tienda['nombre'],
-        'modalidad'     => $modalidad,
-        'estado'        => 'pendiente',
-        'total'         => $total,
-        'codigoEntrega' => $codigo,
-        'items'         => array_map(fn($i) => [
-            'nombre'   => $i['nombre'],
-            'icono'    => $i['icono'],
-            'cantidad' => (int) $i['cantidad'],
-            'precio'   => (float) $i['precio_unitario'],
-        ], $items),
-    ],
-], JSON_UNESCAPED_UNICODE);

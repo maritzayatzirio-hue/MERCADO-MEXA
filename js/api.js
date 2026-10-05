@@ -153,6 +153,21 @@ const API = {
         return r.pedido;
     },
 
+    /* Marca un pedido como entregado (solo chofer o admin).
+       El codigo es el de 6 digitos que se le dio al cliente,
+       y el servidor lo revisa antes de guardar nada. */
+    async pedidoEntregar(folio, codigo) {
+        const r = await this.pedir("pedidos.php", {
+            method: "POST",
+            body: JSON.stringify({
+                accion: "entregar",
+                folio,
+                codigo
+            })
+        });
+        return r.pedido;
+    },
+
     /* ---- Favoritos (guardados en MySQL) ---- */
 
     async favoritos() {
