@@ -874,15 +874,44 @@ function inicializarFormularioRegistro() {
 /* Resultado de la comprobacion, para no repetirla */
 let backendActivo = null;
 
+/* Si no hay servidor la app se cae al respaldo de localStorage, y como
+   todo funciona igual no se nota nada: se registra una cuenta y parece
+   que se guardo, pero en MySQL no aparece. Por eso se avisa una vez. */
+let avisoSinServidorMostrado = false;
+
+function avisarSinServidor() {
+    if (avisoSinServidorMostrado) return;
+    avisoSinServidorMostrado = true;
+
+    mostrarNotificacionCuenta(
+        "Sin conexión a la base de datos",
+        "La página se abrió sin PHP (no uses Live Server). Los cambios se guardan solo en este navegador, no en MySQL.",
+        "⚠️"
+    );
+
+    console.warn(
+        "[Mercado Mexa] api/auth.php no responde. Se usa el respaldo en localStorage. " +
+        "Abre el sitio en http://localhost/mercado-mexa/ para que PHP se ejecute."
+    );
+}
+
 async function backendDisponible() {
-    if (typeof API === "undefined") return false;
+    if (typeof API === "undefined") {
+        avisarSinServidor();
+        return false;
+    }
+
     if (backendActivo !== null) return backendActivo;
+
     try {
         const datos = await API.sesion();
         backendActivo = datos.ok === true;
     } catch (e) {
         backendActivo = false;
     }
+
+    if (!backendActivo) avisarSinServidor();
+
     return backendActivo;
 }
 
