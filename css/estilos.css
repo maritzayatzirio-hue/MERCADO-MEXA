@@ -1,3 +1,10 @@
+/* =====================================================
+   MERCADO MEXA - ESTILOS BASE
+   Este archivo define la imagen general de la app:
+   colores, tipografías, layouts, botones, tarjetas,
+   modales, sidebar, buscador y todo lo visual del sitio.
+===================================================== */
+
 * {
     margin: 0;
     padding: 0;

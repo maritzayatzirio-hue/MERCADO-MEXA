@@ -1,24 +1,34 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <!-- Define el tipo de documento HTML5 y el idioma principal de la página en español -->
     <meta charset="UTF-8">
+    <!-- Ajusta la vista para dispositivos móviles, para que la app se adapte al ancho de la pantalla -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Establece el color de la barra del navegador en móviles para que combine con la marca -->
     <meta name="theme-color" content="#111820">
+    <!-- Título que aparece en la pestaña del navegador -->
     <title>Mercado Mexa | Tiendas Neto Cerca</title>
 
+    <!-- Carga la tipografía principal usada en toda la interfaz -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Estilos de Leaflet para renderizar mapas interactivos -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <!-- Estilos de MapLibre para capas del mapa y widgets de geolocalización -->
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+    <!-- Hoja de estilos principal del proyecto -->
     <link rel="stylesheet" href="css/estilos.css">
+    <!-- Estilos personalizados del mapa tipo Google Maps -->
     <link rel="stylesheet" href="css/mapa-google.css">
 </head>
 
 <body>
+    <!-- Todo el contenido visible de la aplicación se coloca dentro del body -->
 
 <!-- =========================
      PANTALLA DE CARGA
 ========================= -->
-
+<!-- Esta pantalla aparece al inicio para simular la carga de la app y dar una primera impresión visual -->
 <div class="splash" id="splash">
 
     <div class="splash-shape splash-shape-a"></div>
@@ -72,6 +82,7 @@
          BARRA LATERAL
     ========================= -->
 
+    <!-- Barra lateral de navegación principal. Permite moverse entre Inicio, Tiendas, Catálogo, Mi lista y Favoritos -->
     <aside class="sidebar">
 
         <div class="sidebar-logo">
@@ -137,11 +148,12 @@
          CONTENIDO PRINCIPAL
     ========================= -->
 
+    <!-- Área principal de la app. Aquí se carga el contenido actual según la sección activa -->
     <main class="main">
 
 
         <!-- HEADER -->
-
+        <!-- Encabezado superior con buscador, ubicación actual, acciones rápidas y avatar de usuario -->
         <header class="topbar">
 
             <button
@@ -242,16 +254,14 @@
             <!-- =========================
                  MAPA + TIENDAS
             ========================= -->
-
+            <!-- Sección principal donde se muestran el mapa, la lista de tiendas y los controles de búsqueda -->
             <section
                 class="map-section"
                 id="mapaSeccion">
 
-
                 <!-- MAPA -->
-
+                <!-- Este contenedor muestra el mapa interactivo con tiendas, ubicaciones y capas -->
                 <div class="map-card">
-
                     <!-- BARRA SUPERIOR ESTILO GOOGLE MAPS -->
                     <div class="gmaps-top-container">
 
@@ -511,6 +521,7 @@
                     </div>
 
 
+                    <!-- Muestra el estado de la búsqueda y el cargado de tiendas cercanas -->
                     <div
                         class="stores-status"
                         id="storesStatus">
@@ -524,6 +535,7 @@
                     </div>
 
 
+                    <!-- Contenedor dinámico donde se insertan las tarjetas de cada tienda disponible -->
                     <div
                         class="lista-tiendas"
                         id="listaTiendas">
@@ -582,7 +594,7 @@
 <!-- =========================
      MODAL MI LISTA
 ========================= -->
-
+<!-- Este modal representa la lista de compra semanal. Se rellena con productos, precios y promociones desde JavaScript -->
 <div
     class="ventana-modal"
     id="modalLista">
@@ -649,7 +661,7 @@
 <!-- =========================
      MODAL CUENTA
 ========================= -->
-
+<!-- Este modal abre la primera pantalla para iniciar sesión o crear una cuenta. Es la entrada principal del flujo de autenticación -->
 <div
     class="ventana-modal"
     id="modalCuenta">
@@ -730,6 +742,7 @@
 <!-- =========================
      MODAL INICIAR SESIÓN
 ========================= -->
+<!-- Aquí se solicita el correo y la contraseña para autenticar al usuario. También incluye acceso rápido por roles de demo -->
 
 <div
     class="ventana-modal"
@@ -1038,6 +1051,7 @@
 <!-- =========================
      MODAL TÉRMINOS Y CONDICIONES
 ========================= -->
+<!-- Este modal presenta las reglas del servicio. El usuario debe aceptarlos antes de continuar con el registro -->
 
 <div
     class="ventana-modal"
@@ -1155,6 +1169,7 @@
 <!-- =========================
      ASISTENTE NETO FLOTANTE
 ========================= -->
+<!-- Widget flotante con el asistente virtual que ayuda a sugerir una despensa o presupuesto al usuario -->
 
 <div class="neto-float" id="netoFloat">
     <div class="neto-bubble" id="netoBubble">
@@ -1177,6 +1192,7 @@
 <!-- =========================
      MODAL DE OFERTAS
 ========================= -->
+<!-- Modal que visualiza productos en descuento y promociones de la semana. Se llena dinámicamente con datos del catálogo -->
 
 <div class="ventana-modal" id="modalOfertas">
     <div class="contenido-modal catalogo-modal ofertas-modal">
@@ -1202,10 +1218,12 @@
 </div>
 
 <!-- LEAFLET -->
+<!-- Carga las librerías que permiten dibujar y manipular el mapa interactivo -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js"></script>
 
+<!-- Scripts del proyecto: lógica del mapa, APIs, funcionalidad general y roles de usuario -->
 <script src="js/mapa-google.js"></script>
 <script src="js/api.js"></script>
 <script src="js/script.js"></script>

@@ -1,3 +1,10 @@
+/* =====================================================
+   MERCADO MEXA - LÓGICA PRINCIPAL DE LA APP
+   Aquí vive el estado general de la tienda: mapa,
+   ubicación, carrito, favoritos, lista de compra y
+   la conexión entre la interfaz y la lógica del negocio.
+===================================================== */
+
 let mapa = null;
 let ubicacionUsuario = null;
 let direccionEntregaMapa = null;
@@ -583,6 +590,12 @@ function abrirLista(conAnimacion = true) {
    GPS
 ========================= */
 
+/* =====================================================
+   GEOLOCALIZACIÓN Y MAPA
+   Este bloque pide la ubicación del usuario, dibuja
+   el mapa, muestra tiendas cercanas y crea rutas.
+===================================================== */
+
 function obtenerUbicacion() {
 
     estadoUbicacion.textContent =
@@ -730,6 +743,12 @@ function mostrarErrorUbicacion(mensaje) {
 /* =========================
    MAPA
 ========================= */
+
+/* ---
+   Esta función crea el mapa que se ve en la pantalla,
+   posiciona la vista del usuario y deja listo el centro
+   de trabajo para cada tienda o ruta que se abra.
+--- */
 
 function crearMapa(
     lat,
@@ -1320,6 +1339,12 @@ function formatearPrecio(precio) {
     return `$${Number(precio).toFixed(2)}`;
 }
 
+/* =====================================================
+   LISTA DE COMPRA Y CARRITO
+   Aquí se guardan productos, cantidades, precios y
+   comparativas entre tiendas para ayudarte a comprar.
+===================================================== */
+
 function renderLista() {
     const cont = document.getElementById("contenidoLista");
     if (!cont) return;
@@ -1494,6 +1519,12 @@ function renderLista() {
         </div>
     `;
 }
+
+/* ---
+   Proceso de pago: junta la lista, valida la tienda,
+   muestra la dirección, opciones de envío y el resumen
+   final antes de confirmar la compra.
+--- */
 
 function abrirCheckoutLista() {
     if (!carrito.length) {
@@ -3426,6 +3457,12 @@ function abrirCatalogo(tienda) {
    CONTENIDO DEL CATÁLOGO
 ========================= */
 
+/* =====================================================
+   CATÁLOGO Y FAVORITOS
+   Estas funciones renderizan productos, abren las tiendas,
+   activan favoritos y dejan el catálogo listo para comprar.
+===================================================== */
+
 function mostrarContenidoCatalogo(
     catalogo,
     tienda
@@ -4039,6 +4076,11 @@ function obtenerTodosLosProductos() {
 
     return productos;
 }
+
+/* ---
+   Mostrar favoritos: se toman los productos marcados como
+   preferidos y se montan tarjetas o listas rápidas.
+--- */
 
 function abrirFavoritos(conAnimacion = true) {
     let modal = document.getElementById("modalFavoritos");
@@ -5928,6 +5970,11 @@ function productoSemanal(nombre, precio, cantidad, categoriaLista, options = {})
     };
 }
 
+/* ---
+   Genera una despensa semanal recomendada según el
+   presupuesto o una compra balanceada.
+--- */
+
 function generarListaAutomatica() {
     detallesTiendaAbiertos = {};
     /* Despensa semanal balanceada, variada y completa con ofertas, caducidades y comparador de tiendas */
@@ -6105,6 +6152,12 @@ function escapeJS(text) {
 // ========================================
 // ASISTENTE NETO
 // ========================================
+
+/* =====================================================
+   ASISTENTE NETO
+   Aquí el bot ayuda al usuario a armar una lista de compra
+   con presupuesto, ofertas y productos esenciales.
+===================================================== */
 
 function abrirAsistenteNeto() {
 
@@ -7048,6 +7101,11 @@ function cerrarOfertas() {
    INICIALIZAR EVENTOS DE OFERTAS
    (se ejecuta al cargar la página)
 ===================================================== */
+
+/* ---
+   Modal de ofertas: recoge productos en descuento y los
+   pinta en pantalla para promocionar la semana.
+--- */
 
 function iniciarModuloOfertas() {
 
