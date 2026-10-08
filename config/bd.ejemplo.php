@@ -17,7 +17,7 @@ function conectarBD() {
         'host'    => 'localhost',
         'db'      => 'mercado_mexa',
         'user'    => 'root',
-        'pass'    => 'AQUI_PON_TU_CONTRASENA',   // en XAMPP el usuario root va vacio
+        'pass'    => ',   // en XAMPP el usuario root va vacio
         'charset' => 'utf8mb4',
     ];
 
